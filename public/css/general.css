@@ -1,0 +1,30 @@
+@font-face {
+  font-family: 'space'; /*a name to be used later*/
+  src: url('./Spac3_neon.woff'); /*URL to font*/
+}
+html, body {
+  font-family: 'Quicksand', sans-serif;
+  background-color: #222;
+  
+}
+
+/* Icon */
+i {
+  margin-right: 5px;
+}
+
+div.box-full-width {
+  width: 100%;
+  float: left;
+}
+div.box-half {
+  width: 50%;
+  float: left;
+}
+div.clear-float {
+  clear: both;
+}
+a {
+  text-decoration: none;
+  color: white;
+}

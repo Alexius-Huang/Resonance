@@ -1,0 +1,51 @@
+html, body {
+  height: 100%;
+}
+div.aside-nav {
+  width: 25%;
+  height: 100%;
+  background-color: #333;
+  position: fixed;
+}
+ul.nav-list {
+  box-sizing: border-box;
+  width: 100%;
+}
+ul.nav-list > li {
+  padding: 10px 20px;
+  height: 20px;
+  line-height: 20px;
+  color: #ddd;
+  transition: .25s;
+}
+ul.nav-list > li:first-child {
+  font-size: 20px;
+  height: 40px;
+  line-height: 40px;
+  background-color: #223;
+  border-bottom: 2px solid hsl(210, 100%, 30%);
+}
+ul.nav-list > li:first-child {
+  color: hsl(210, 100%, 50%);
+}
+ul.nav-list > li.active {
+  background-color: #223;
+  color: hsl(210, 80%, 50%);
+}
+ul.nav-list > li:hover {
+  text-shadow: 0px 0px 5px hsl(210, 50%, 50%);
+  background-color: #223;
+  cursor: pointer;
+  transition: .25s;
+  color: hsl(210, 80%, 50%);
+}
+@media screen and (max-width: 767px) {
+  div.aside-nav {
+    width: 210px;
+  }
+}
+@media screen and (min-width: 768px) {
+  div.aside-nav {
+    width: 210px;
+  }
+}
