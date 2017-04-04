@@ -1,0 +1,52 @@
+div#upload-musics {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 20px;
+}
+div#upload-musics > div#drag-and-drop-file-handler {
+  box-sizing: border-box;
+  background-color: #333;
+  box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.2); 
+  border: 2px dotted hsl(210, 100%, 50%);
+  margin: 0 auto;
+  width: 80%;
+  margin-top: 50px;
+  height: 200px;
+  font-size: 0;
+}
+div#upload-musics > div#drag-and-drop-file-handler:before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 100%;
+  background-color: red;
+  vertical-align: middle;
+}
+div#upload-musics > div#drag-and-drop-file-handler > p {
+  font-size: 25px;
+  display: inline-block;
+  text-align: center;
+  vertical-align: middle;
+}
+div#recent-uploads {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 20px 20px 0 20px;
+}
+div#recent-uploads > div.upload-info {
+  display: none;
+  box-sizing: border-box;
+  width: 80%;
+  margin: 0 auto 20px auto;
+  padding: 20px;
+  background-color: #333;
+  box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.2);
+  word-break: break-all;
+}
+div#recent-uploads > div.upload-info > p + p {
+  margin-top: 10px;
+}
+div#recent-uploads > div.upload-info > p.__uploaded {
+  font-size: 14px;
+}

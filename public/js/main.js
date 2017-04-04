@@ -4,14 +4,15 @@ var CURRENT_PAGE = null;
 var PARTIAL_JSON = {
   _caption: {
     __title: {
-      all_songs: 'all songs',
-      upload_songs: 'upload songs',
+      all_musics: 'all musics',
+      upload_musics: 'upload musics',
       playlists: 'playlists',
       playing: 'playing',
       setting: 'setting'
     }
   }
 };
+var RECENTLY_UPLOADED = {}
 
 function GET(page, callback) {
   /* Change Side Bar Style */
@@ -67,6 +68,27 @@ function GET_PARTIALS(callback) {
   } else callback.call();
 }
 
+function REQUEST_PARTIAL(partial, data, classname, callback) {
+  var resultNode = document.createElement('div');
+  resultNode.className = classname;
+
+  $.ajax({
+    url: BASE_URL + 'partial',
+    type: 'POST',
+    data: { partial: partial },
+    cache: false,
+    success: function(html) {
+      resultNode.innerHTML = html
+      
+      for (var key of Object.keys(data)) {
+        resultNode.getElementsByClassName('__' + key)[0].innerHTML = data[key];
+      }
+
+      callback(resultNode);
+    }
+  });
+}
+
 function init() {
   $('#li-main').addClass('active');
   GET('main', function() {
@@ -91,17 +113,17 @@ $(document).ready(function() {
     });
   });
 
-  $('#li-all_songs').on('click', function(event) {
+  $('#li-all_musics').on('click', function(event) {
     event.preventDefault();
-    GET('all_songs', function() {
+    GET('all_musics', function() {
     
     });
   });
 
-  $('#li-upload_songs').on('click', function(event) {
+  $('#li-upload_musics').on('click', function(event) {
     event.preventDefault();
-    GET('upload_songs', function() {
-      setupUploadSongsEvent();
+    GET('upload_musics', function() {
+      setupUploadMusicsEvent();
     });
   });
   
@@ -134,8 +156,8 @@ $(document).ready(function() {
   });
 });
 
-/* Upload songs event */
-function setupUploadSongsEvent() {
+/* Upload musics event */
+function setupUploadMusicsEvent() {
   /* CSS Animation */
   var CSS = {
     dragenter: {
@@ -167,17 +189,37 @@ function setupUploadSongsEvent() {
     event.preventDefault();
     var fileList = event.originalEvent.dataTransfer.files;
     
-    for (var file of fileList) {
+    function uploadFile(count) {
+      let file = fileList[count - 1]; 
       if (file.type === 'audio/mp3') {
         $.ajax({
           type: 'POST',
-          url: BASE_URL + 'upload_songs',
+          url: BASE_URL + 'upload_musics',
           data: { filename: file.name, filepath: file.path },
           cache: false,
-          success: function(data) { console.log(data) }
+          dataType: 'json',
+          success: function(data) {
+            /* Create Element */
+            var html = REQUEST_PARTIAL('upload_info', {
+              filename: data.filename,
+              uploaded: 'Uploaded at ' + data.uploaded
+            },'upload-info', function(html) {
+              console.log(html)
+              html.setAttribute('id', 'file-' + data.id);
+              $('#recent-uploads').prepend(html);
+              $('#file-' + data.id).slideDown(500);
+
+              /* If file count isn't 0, keep uploading! */
+              count--;
+              if (count != 0) setTimeout(function() { uploadFile(count) }, 500);
+            });
+          }
         });
       } else console.warn('Wrong MIME format');
     }
+
+    /* Recursively upload files synchronously */
+    uploadFile(fileList.length);
 
   });
 }

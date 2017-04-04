@@ -1,13 +1,11 @@
 const {app, BrowserWindow} = require('electron')
-const MultipartParser = require('./multipart_parser.js')
 const path = require('path')
 const url = require('url')
 const http = require('http')
+const moment = require('moment')
 const fs = require('fs')
 const port = 3001
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
 let win
 let ENVIRONMENT = 'development'
 let $browser = {
@@ -15,55 +13,62 @@ let $browser = {
 }
 
 function createWindow () {
-  // Create the browser window.
   win = new BrowserWindow({ width: $browser.width, height: $browser.height })
 
-  // and load the index.html of the app.
   win.loadURL(url.format({
     pathname: path.join(__dirname, 'public/general.html'),
     protocol: 'file:',
     slashes: true
   }))
 
-  // Open the DevTools.
   if (ENVIRONMENT === 'development') win.webContents.openDevTools()
 
-  // Emitted when the window is closed.
   win.on('closed', () => {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
     win = null
   })
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.on('ready', createWindow)
 
-// Quit when all windows are closed.
 app.on('window-all-closed', () => {
-  // On macOS it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
 
 app.on('activate', () => {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
   if (win === null) {
     createWindow()
   }
 })
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
 
 function getHTMLFile(name) {
-  return __dirname + '/public/' + name + '.html';
+  return __dirname + '/public/' + name + '.html'
+}
+
+function getJSONFile(name) {
+  return __dirname + '/data/' + name + '.json'
+}
+
+function parseJSONFile(file) {
+  return JSON.parse(fs.readFileSync(file, 'utf8'))
+}
+
+function parseJSONData(type) {
+  return parseJSONFile(getJSONFile(type))
+}
+
+function writeJSONFile(filename, json, callback) {
+  fs.writeFile(filename, JSON.stringify(json, null, 2), 'utf8', callback)
+}
+
+function writeJSONData(type, json, callback) {
+  writeJSONFile(getJSONFile(type), json, callback)
+}
+
+function getCurrentTime(format) {
+  return moment().format(format || 'YYYY:MM:DD hh:mm:ss')
 }
 
 http.createServer(function(request, response) {
@@ -119,8 +124,8 @@ http.createServer(function(request, response) {
   if (request.method === 'GET') {
     switch(request.url) {
       case '/main': render('main'); break;
-      case '/all_songs': render('all_songs'); break;
-      case '/upload_songs': render('upload_songs'); break;
+      case '/all_musics': render('all_musics'); break;
+      case '/upload_musics': render('upload_musics'); break;
       case '/playlists': render('playlists'); break;
       case '/playing': render('playing'); break;
       case '/setting': render('setting'); break;
@@ -129,14 +134,39 @@ http.createServer(function(request, response) {
     }
   } else if (request.method === 'POST') {
     switch(request.url) {
-      case '/upload_songs':
+      case '/upload_musics':
         postRequest(request, function(data) {
           fs.createReadStream(data.filepath).pipe(fs.createWriteStream(__dirname + '/uploads/' + data.filename));
-          response.writeHead(200, { 'Content-Type': 'text/plain' })
-          data.message = 'Success Uploading'
-          response.write(data)
-          response.end()
+          
+          let userData = parseJSONData('user')
+          userData.music_count++
+          userData.music_index++
+          let musicIndex = userData.music_index
+          
+          /* Recording user and music data */
+          writeJSONData('user', userData, function() {
+            var musicObj = {
+              id: musicIndex,
+              name: data.filename,
+              playlistIDs: [],
+              uploaded: getCurrentTime()
+            }
+            musicData = parseJSONData('music')
+            musicData.push(musicObj)
+            writeJSONData('music', musicData, function() {
+              data.id = musicObj.id
+              data.message = 'Success Uploading'
+              data.uploaded = musicObj.uploaded
+              jsonResponse(data)
+            })
+          })
         })
+        break;
+      case '/partial':
+        postRequest(request, function(data) {
+          render(`partials/_${data.partial}`)
+        })
+        break;
     }
   }
 }).listen(port)
