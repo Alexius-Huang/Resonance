@@ -11,6 +11,8 @@ html, body {
 i {
   margin-right: 5px;
 }
+div#output {
+}
 div.page-wrapper {
   box-sizing: border-box;
   width: 100%;

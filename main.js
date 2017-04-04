@@ -1,4 +1,5 @@
 const {app, BrowserWindow} = require('electron')
+const MultipartParser = require('./multipart_parser.js')
 const path = require('path')
 const url = require('url')
 const http = require('http')
@@ -87,6 +88,34 @@ http.createServer(function(request, response) {
     response.end(JSON.stringify(obj))
   }
 
+  function postRequest(request, callback) {
+    var POST = {}
+    request.on('data', function(data) {
+      data = data.toString('utf8');
+      data = data.split('&');
+      for (let i = 0; i < data.length; i++) {
+        var _data = data[i].split("=");
+        var processed = ""
+        _data[1] = _data[1].replace(/\+/g, " ")
+        for (let j = 0; j < _data[1].length; j++) {
+          if (_data[1][j] == '%') {
+            let ascii = parseInt(_data[1].slice(j + 1, j + 3), 16)
+            processed = processed.concat(String.fromCharCode(ascii))
+            j += 2
+          } else processed = processed.concat(_data[1][j])
+        }
+
+        POST[_data[0]] = processed;
+
+        console.log(`POST :: "${_data[0]}": "${POST[_data[0]]}"`)
+      }
+    })
+    request.once('end', function() {
+      console.log("")
+      callback(POST)
+    })
+  }
+
   if (request.method === 'GET') {
     switch(request.url) {
       case '/main': render('main'); break;
@@ -100,6 +129,18 @@ http.createServer(function(request, response) {
     }
   } else if (request.method === 'POST') {
     switch(request.url) {
+      case '/upload_songs':
+        postRequest(request, function(data) {
+          fs.createReadStream(data.filepath).pipe(fs.createWriteStream(__dirname + '/uploads/' + data.filename));
+          response.writeHead(200, { 'Content-Type': 'text/plain' })
+          data.message = 'Success Uploading'
+          response.write(data)
+          response.end()
+        })
     }
   }
 }).listen(port)
+
+process.on('uncaughtException', function(err) {
+  // console.log(err)
+})

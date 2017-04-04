@@ -28,7 +28,9 @@ function GET(page, callback) {
       $('#output').fadeOut(250, function() {
         $('#output').html(html);
         GET_PARTIALS(function() { 
-          $('#output').fadeIn(250);
+          $('#output').fadeIn(250, function() {
+            callback.call();
+          });
         });
       });
     },
@@ -48,10 +50,13 @@ function GET_PARTIALS(callback) {
         type: 'GET',
         success: function(html) {
           node.html(html);
+
+          /* Fill in partial template data */
           var partialData = PARTIAL_JSON[partialID];
           for (var key of Object.keys(partialData)) {
             $('#' + key).html(partialData[key][CURRENT_PAGE]);
           }
+
           callback.call();
         },
         error: function() {
@@ -96,7 +101,7 @@ $(document).ready(function() {
   $('#li-upload_songs').on('click', function(event) {
     event.preventDefault();
     GET('upload_songs', function() {
-    
+      setupUploadSongsEvent();
     });
   });
   
@@ -128,3 +133,51 @@ $(document).ready(function() {
     });
   });
 });
+
+/* Upload songs event */
+function setupUploadSongsEvent() {
+  /* CSS Animation */
+  var CSS = {
+    dragenter: {
+      border: '2px solid hsl(210, 100%, 50%)',
+      transition: '.25s'
+    },
+    dragover: {
+      backgroundColor: 'hsl(210, 100%, 50%)',
+      transition: '.25s'
+    },
+    drop: {
+      backgroundColor: '#333',
+      border: '2px dotted hsl(210, 100%, 50%)',
+      transition: '.25s'
+    }
+  };
+  var dropped = true;
+  var dragDropElement = $('div#drag-and-drop-file-handler')
+  dragDropElement.on('dragenter', function(event) {
+    event.stopPropagation();
+    event.preventDefault();
+    $(this).css(CSS.dragenter);
+  }).on('dragover', function(event) {
+    event.stopPropagation();
+    event.preventDefault();
+    $(this).css(CSS.dragover);
+  }).on('drop', function(event) {
+    $(this).css(CSS.drop);
+    event.preventDefault();
+    var fileList = event.originalEvent.dataTransfer.files;
+    
+    for (var file of fileList) {
+      if (file.type === 'audio/mp3') {
+        $.ajax({
+          type: 'POST',
+          url: BASE_URL + 'upload_songs',
+          data: { filename: file.name, filepath: file.path },
+          cache: false,
+          success: function(data) { console.log(data) }
+        });
+      } else console.warn('Wrong MIME format');
+    }
+
+  });
+}

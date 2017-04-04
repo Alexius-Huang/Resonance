@@ -11,7 +11,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron-packager": "^8.6.0"
+    "electron-packager": "^8.6.0",
+    "nodeproxy": "^1.0.0"
   },
   "dependencies": {}
 }
