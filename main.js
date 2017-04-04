@@ -136,29 +136,35 @@ http.createServer(function(request, response) {
     switch(request.url) {
       case '/upload_musics':
         postRequest(request, function(data) {
-          fs.createReadStream(data.filepath).pipe(fs.createWriteStream(__dirname + '/uploads/' + data.filename));
-          
-          let userData = parseJSONData('user')
-          userData.music_count++
-          userData.music_index++
-          let musicIndex = userData.music_index
-          
-          /* Recording user and music data */
-          writeJSONData('user', userData, function() {
-            var musicObj = {
-              id: musicIndex,
-              name: data.filename,
-              playlistIDs: [],
-              uploaded: getCurrentTime()
+          fs.exists(__dirname + '/uploads/' + data.filename, function(exists) {
+            if (exists) {
+              jsonResponse({ error: 'file exists', filename: data.filename })
+            } else {
+              fs.createReadStream(data.filepath).pipe(fs.createWriteStream(__dirname + '/uploads/' + data.filename));
+              
+              let userData = parseJSONData('user')
+              userData.music_count++
+              userData.music_index++
+              let musicIndex = userData.music_index
+              
+              /* Recording user and music data */
+              writeJSONData('user', userData, function() {
+                var musicObj = {
+                  id: musicIndex,
+                  name: data.filename,
+                  playlistIDs: [],
+                  uploaded: getCurrentTime()
+                }
+                musicData = parseJSONData('music')
+                musicData.push(musicObj)
+                writeJSONData('music', musicData, function() {
+                  data.id = musicObj.id
+                  data.message = 'Success Uploading'
+                  data.uploaded = musicObj.uploaded
+                  jsonResponse(data)
+                })
+              })
             }
-            musicData = parseJSONData('music')
-            musicData.push(musicObj)
-            writeJSONData('music', musicData, function() {
-              data.id = musicObj.id
-              data.message = 'Success Uploading'
-              data.uploaded = musicObj.uploaded
-              jsonResponse(data)
-            })
           })
         })
         break;

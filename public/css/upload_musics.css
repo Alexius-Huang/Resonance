@@ -41,11 +41,14 @@ div#recent-uploads > div.upload-info {
   margin: 0 auto 20px auto;
   padding: 20px;
   background-color: #333;
-  box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0px 0px 5px hsl(210, 100%, 50%);
   word-break: break-all;
 }
 div#recent-uploads > div.upload-info > p + p {
   margin-top: 10px;
+}
+div#recent-uploads > div.upload-info > p.__filename {
+  line-height: 23px;
 }
 div#recent-uploads > div.upload-info > p.__uploaded {
   font-size: 14px;
