@@ -5,14 +5,17 @@
 html, body {
   font-family: 'Quicksand', sans-serif;
   background-color: #222;
-  
+  color: white;
 }
 
-/* Icon */
 i {
   margin-right: 5px;
 }
-
+div.page-wrapper {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 40px;
+}
 div.box-full-width {
   width: 100%;
   float: left;
@@ -27,4 +30,63 @@ div.clear-float {
 a {
   text-decoration: none;
   color: white;
+}
+
+.row {
+  clear: both;
+}
+
+/* Grid */
+@media screen and (max-width: 767px) {
+  .col-sm-1         { width: 8.33333%;        float: left; }
+  .col-sm-2         { width: 16.66666%;       float: left; }
+  .col-sm-3         { width: 25%;             float: left; }
+  .col-sm-4         { width: 33.33333%;       float: left; }
+  .col-sm-5         { width: 41.66666%;       float: left; }
+  .col-sm-6         { width: 50%;             float: left; }
+  .col-sm-7         { width: 58.33333%;       float: left; }
+  .col-sm-8         { width: 66.66666%;       float: left; }
+  .col-sm-9         { width: 75%;             float: left; }
+  .col-sm-10        { width: 83.33333%;       float: left; }
+  .col-sm-11        { width: 91.66666%;       float: left; }
+  .col-sm-12        { width: 100%;            float: left; } 
+  .col-sm-offset-1  { margin-left: 8.33333%;  float: left; }
+  .col-sm-offset-2  { margin-left: 16.66666%; float: left; }
+  .col-sm-offset-3  { margin-left: 25%;       float: left; }
+  .col-sm-offset-4  { margin-left: 33.33333%; float: left; }
+  .col-sm-offset-5  { margin-left: 41.66666%; float: left; }
+  .col-sm-offset-6  { margin-left: 50%;       float: left; }
+  .col-sm-offset-7  { margin-left: 58.33333%; float: left; }
+  .col-sm-offset-8  { margin-left: 66.66666%; float: left; }
+  .col-sm-offset-9  { margin-left: 75%;       float: left; }
+  .col-sm-offset-10 { margin-left: 83.33333%; float: left; }
+  .col-sm-offset-11 { margin-left: 91.66666%; float: left; }
+  .col-sm-offset-12 { margin-left: 100%;      float: left; }
+}
+
+@media screen and (min-width: 768px) {
+  .col-bg-1         { width: 8.33333%;        float: left;}
+  .col-bg-2         { width: 16.66666%;       float: left;}
+  .col-bg-3         { width: 25%;             float: left;}
+  .col-bg-4         { width: 33.33333%;       float: left;}
+  .col-bg-5         { width: 41.66666%;       float: left;}
+  .col-bg-6         { width: 50%;             float: left;}
+  .col-bg-7         { width: 58.33333%;       float: left;}
+  .col-bg-8         { width: 66.66666%;       float: left;}
+  .col-bg-9         { width: 75%;             float: left;}
+  .col-bg-10        { width: 83.33333%;       float: left;}
+  .col-bg-11        { width: 91.66666%;       float: left;}
+  .col-bg-12        { width: 100%;            float: left;}
+  .col-bg-offset-1  { margin-left: 8.33333%;  float: left;}
+  .col-bg-offset-2  { margin-left: 16.66666%; float: left;}
+  .col-bg-offset-3  { margin-left: 25%;       float: left;}
+  .col-bg-offset-4  { margin-left: 33.33333%; float: left;}
+  .col-bg-offset-5  { margin-left: 41.66666%; float: left;}
+  .col-bg-offset-6  { margin-left: 50%;       float: left;}
+  .col-bg-offset-7  { margin-left: 58.33333%; float: left;}
+  .col-bg-offset-8  { margin-left: 66.66666%; float: left;}
+  .col-bg-offset-9  { margin-left: 75%;       float: left;}
+  .col-bg-offset-10 { margin-left: 83.33333%; float: left;}
+  .col-bg-offset-11 { margin-left: 91.66666%; float: left;}
+  .col-bg-offset-12 { margin-left: 100%;      float: left;}
 }

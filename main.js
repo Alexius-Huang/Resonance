@@ -10,7 +10,7 @@ const port = 3001
 let win
 let ENVIRONMENT = 'development'
 let $browser = {
-  width: 1200, height: 900
+  width: 1400, height: 900
 }
 
 function createWindow () {
@@ -67,6 +67,7 @@ function getHTMLFile(name) {
 
 http.createServer(function(request, response) {
   console.log(`${request.method} :: http://localhost:${port}${request.url} at ${new Date()}`);
+  
   function render(file) {
     fs.readFile(getHTMLFile(file), function (error, pageResponse) {
       if (error) {
@@ -90,10 +91,12 @@ http.createServer(function(request, response) {
     switch(request.url) {
       case '/main': render('main'); break;
       case '/all_songs': render('all_songs'); break;
+      case '/upload_songs': render('upload_songs'); break;
       case '/playlists': render('playlists'); break;
       case '/playing': render('playing'); break;
       case '/setting': render('setting'); break;
       case '/info': render('info'); break;
+      default: render(request.url.slice(1)); // <= Render Partials
     }
   } else if (request.method === 'POST') {
     switch(request.url) {
