@@ -23,6 +23,7 @@ var $audio = null;
 var $audio_source = null;
 var $audio_player_footer = null;
 var $audio_player_gradient_bg = null;
+var $audio_btn = {};
 
 /* ---------------------- HTTP Request Helpers --------------------- */
   function GET(page, callback) {
@@ -131,7 +132,60 @@ var $audio_player_gradient_bg = null;
     var shade = document.getElementById('disable-nav-shade')
     shade.parentNode.removeChild(shade);
   }
+
+  function decodeASCII(string) {
+    var processed = ""
+    for (let j = 0; j < string.length; j++) {
+      if (string[j] == '%') {
+        let ascii = parseInt(string.slice(j + 1, j + 3), 16)
+        processed = processed.concat(String.fromCharCode(ascii))
+        j += 2
+      } else processed = processed.concat(string[j])
+    }
+    return processed;
+  }
+
 /* ------------------------------ Helper Functions --------------------------- */
+
+/* --------------------------- Audio Helper Functions --------------------------- */
+
+  function isPlaying() {
+    if ($audio) {
+      return !$audio.paused;
+    } else return false;
+  }
+
+  function stopPlaying() {
+    if (isPlaying()) $audio.pause();
+    setPlayingTime(0);
+  }
+
+  function currentlyPlaying() {
+    return {
+      musicname: decodeASCII($audio.currentSrc.split('/').pop())
+    }
+  }
+
+  function getDuration() { return $audio.duration; }
+
+  function forward(time) { 
+    if ($audio.duration > $audio.currentTime + time) {
+      setPlayingTime($audio.currentTime + time);
+    } else {
+      /* Function with playlist feature under construction */
+    }
+  }
+
+  function backward(time) {
+    if ($audio.currentTime - time > 0) { 
+      setPlayingTime($audio.currentTime - time);
+    } else {
+      /* Function with playlist feature under construction */
+    }
+  }
+
+  function setPlayingTime(time) { $audio.currentTime = time; }
+/* --------------------------- Audio Helper Functions --------------------------- */
 
 /* ------------------------------ Initializations --------------------------- */
   /* Initialize when opening the app */
@@ -142,6 +196,13 @@ var $audio_player_gradient_bg = null;
       $audio_source = document.getElementById('audio-source');
       $audio_player_footer = document.getElementById('audio-player-footer');
       $audio_player_gradient_bg = document.getElementById('audio-player-gradient-bg');
+      $audio_btn.fast_backward = $('#audio-fast-backward');
+      $audio_btn.backward = $('#audio-backward');
+      $audio_btn.stop = $('#audio-stop');
+      $audio_btn.play = $('#audio-play');
+      $audio_btn.pause = $('#audio-pause');
+      $audio_btn.forward = $('#audio-forward');
+      $audio_btn.fast_forward = $('#audio-fast-forward');
 
       /* Get main page */
       $('#li-main').addClass('active');
@@ -156,6 +217,9 @@ var $audio_player_gradient_bg = null;
 
           initializeAllMusicNodes();
           initializeRecentUploadedNodes();
+
+          /* Setup Audio Event Once */
+          setupAudioButtonEvent();
         })
       });
     });
@@ -188,7 +252,7 @@ var $audio_player_gradient_bg = null;
             // $('#file-' + music.id).slideDown(500);
           }
           
-          /* Setup Audio Play Events */
+          /* Setup Audio Play Events in All Musics => Each Individually */
           setupAudioPlayEvent(html, music);
 
           /* If file count isn't 0, keep uploading! */
@@ -243,6 +307,45 @@ var $audio_player_gradient_bg = null;
         },
         error: function() { console.warn('Could not find the filepath'); }
       })
+    });
+  }
+
+  function setupAudioButtonEvent() {
+    $audio_btn.fast_backward.on('click', function(event) {
+      if ($audio) {
+        /* Function with playlist feature under construction */
+      }
+    });
+    $audio_btn.backward.on('click', function(event) {
+      if ($audio) {
+        backward(5);
+      }
+    });
+    $audio_btn.stop.on('click', function(event) {
+      if ($audio) {
+        stopPlaying();
+      }
+    });
+    $audio_btn.play.on('click', function(event) {
+      if ($audio && !isPlaying()) {
+        $audio.play();
+        console.log(currentlyPlaying());
+      }
+    });
+    $audio_btn.pause.on('click', function(event) {
+      if ($audio && isPlaying()) {
+        $audio.pause();
+      }
+    });
+    $audio_btn.forward.on('click', function(event) {
+      if ($audio) {
+        forward(5);
+      }
+    });
+    $audio_btn.fast_forward.on('click', function(event) {
+      if ($audio) {
+        /* Function with playlist feature under construction */
+      }
     });
   }
 
@@ -331,32 +434,24 @@ var $audio_player_gradient_bg = null;
 
 /* --------------------------------- Page Methods ------------------------------ */
 
+  function displayNodeRecursively(parameter, count, id, page) {
+    var node = parameter[count - 1];
+    $('#' + id).append(node);
+    node.style.display = 'none';
+    $(node).fadeIn(200, function() {
+      if (--count !== 0 && CURRENT_PAGE === page) displayNodeRecursively(parameter, count, id, page);
+    });
+  }
+
   function displayAllMusics() {
     if (ALL_MUSIC_NODES.length != 0) {
-      function displayNodeRecursively(count) {
-        var node = ALL_MUSIC_NODES[count - 1];
-        $('#all-musics').append(node);
-        node.style.display = 'none';
-        $(node).fadeIn(250, function() {
-          if (--count != 0) displayNodeRecursively(count);
-        });
-      }
-      displayNodeRecursively(ALL_MUSIC_NODES.length);
-      // for (var node of ALL_MUSIC_NODES) {
-      //   node.style.display = 'none';
-      //   $('#all-musics').append(node);
-      //   $(node).fadeIn(500);
-      // }
+      displayNodeRecursively(ALL_MUSIC_NODES, ALL_MUSIC_NODES.length, 'all-musics', 'all_musics');
     } else return false;
   }
 
   function displayRecentlyUploadedMusic() {
     if (RECENTLY_UPLOADED_NODES.length != 0) {
-      for (var node of RECENTLY_UPLOADED_NODES) {
-        if (node.style.display) { node.style.display = 'none'; }
-        $('#recent-uploads').append(node);
-        $(node).fadeIn(500);
-      }
+      displayNodeRecursively(RECENTLY_UPLOADED_NODES, RECENTLY_UPLOADED_NODES.length, 'recent-uploads', 'upload_musics');
     } else return false;
   }
 

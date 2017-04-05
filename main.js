@@ -74,6 +74,18 @@ function getCurrentTime(format) {
   return moment().format(format || 'YYYY-MM-DD hh:mm:ss')
 }
 
+function decodeASCII(string) {
+  var processed = ""
+  for (let j = 0; j < string.length; j++) {
+    if (string[j] == '%') {
+      let ascii = parseInt(string.slice(j + 1, j + 3), 16)
+      processed = processed.concat(String.fromCharCode(ascii))
+      j += 2
+    } else processed = processed.concat(string[j])
+  }
+  return processed;
+}
+
 let ALL_MUSICS;
 
 http.createServer(function(request, response) {
@@ -113,18 +125,10 @@ http.createServer(function(request, response) {
       data = data.toString('utf8');
       data = data.split('&');
       for (let i = 0; i < data.length; i++) {
-        var _data = data[i].split("=");
-        var processed = ""
+        var _data = data[i].split("=")
         _data[1] = _data[1].replace(/\+/g, " ")
-        for (let j = 0; j < _data[1].length; j++) {
-          if (_data[1][j] == '%') {
-            let ascii = parseInt(_data[1].slice(j + 1, j + 3), 16)
-            processed = processed.concat(String.fromCharCode(ascii))
-            j += 2
-          } else processed = processed.concat(_data[1][j])
-        }
-
-        POST[_data[0]] = processed;
+        
+        POST[_data[0]] = decodeASCII(_data[1]);
 
         console.log(`POST :: "${_data[0]}": "${POST[_data[0]]}"`)
       }
