@@ -156,14 +156,20 @@ http.createServer(function(request, response) {
 
       case '/get_musics':
         postRequest(request, function(data) {
-          jsonResponse(parseJSONData('music'))
+          jsonResponse(ALL_MUSICS)
         })
         break;
 
       case '/get_music_path':
         postRequest(request, function(data) {
-          response.writeHead(200, { "Content-Type": "text/plain" })
-          response.end(`file://${__dirname}/public/music/${getMusic(data.id).name}`)
+          plainResponse(`file://${__dirname}/public/music/${getMusic(data.id).name}`)
+        })
+        break;
+      
+      case '/update_all_musics':
+        postRequest(request, function(data) {
+          ALL_MUSICS = parseJSONData('music')
+          jsonResponse(ALL_MUSICS)
         })
         break;
 

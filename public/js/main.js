@@ -17,6 +17,8 @@ var ALL_MUSICS = []
 var ALL_MUSIC_NODES = []
 var RECENTLY_UPLOADED = []
 var RECENTLY_UPLOADED_NODES = []
+
+/* Audio params */
 var $audio = null;
 var $audio_source = null;
 
@@ -164,7 +166,8 @@ var $audio_source = null;
     });
   }
 
-  function initializeAllMusicNodes() {
+  function initializeAllMusicNodes(test) {
+    if (test) console.log('all music node init');
     if (ALL_MUSICS.length != 0) {
       function recursivelyAppendPartial(count) {
         var music = ALL_MUSICS[count - 1];
@@ -178,24 +181,13 @@ var $audio_source = null;
             // $('#recent-uploads').prepend(html);
             // $('#file-' + music.id).slideDown(500);
           }
-          /* Setup Events */
-          $(html).on('click', function(event) {
-            $.ajax({
-              type: 'POST',
-              url: BASE_URL + 'get_music_path',
-              data: { id: music.id },
-              cache: false,
-              success: function(filepath) {
-                $audio_source.setAttribute('src', filepath);
-                $audio.load();
-                $audio.play();
-              },
-              error: function() { console.warn('Could not find the filepath'); }
-            })
-          });
+          
+          /* Setup Audio Play Events */
+          setupAudioPlayEvent(html, music);
 
           /* If file count isn't 0, keep uploading! */
           if (--count !== 0) recursivelyAppendPartial(count);
+          if (test) console.log(ALL_MUSIC_NODES)
         });
       }
       recursivelyAppendPartial(ALL_MUSICS.length)
@@ -228,6 +220,27 @@ var $audio_source = null;
   }
 
 /* ------------------------------ Initializations --------------------------- */
+
+/* -------------------------------- Audio Events ------------------------------ */
+
+  function setupAudioPlayEvent(html, music) {
+    $(html).on('click', function(event) {
+      $.ajax({
+        type: 'POST',
+        url: BASE_URL + 'get_music_path',
+        data: { id: music.id },
+        cache: false,
+        success: function(filepath) {
+          $audio_source.setAttribute('src', filepath);
+          $audio.load();
+          $audio.play();
+        },
+        error: function() { console.warn('Could not find the filepath'); }
+      })
+    });
+  }
+
+/* -------------------------------- Audio Events ------------------------------ */
 
 /* --------------------------------- Page Events ------------------------------ */
   $(document).ready(function() {
@@ -294,120 +307,153 @@ var $audio_source = null;
 
 /* --------------------------------- Page Methods ------------------------------ */
 
-function displayAllMusics() {
-  if (ALL_MUSIC_NODES.length != 0) {
-    for (var node of ALL_MUSIC_NODES) {
-      if (node.style.display) { node.style.display = 'none'; }
-      $('#all-musics').append(node);
-      $(node).fadeIn(500);
-    }
-  } else return false;
-}
+  function displayAllMusics() {
+    if (ALL_MUSIC_NODES.length != 0) {
+      for (var node of ALL_MUSIC_NODES) {
+        if (node.style.display) { node.style.display = 'none'; }
+        $('#all-musics').append(node);
+        $(node).fadeIn(500);
+      }
+    } else return false;
+  }
 
-function displayRecentlyUploadedMusic() {
-  if (RECENTLY_UPLOADED_NODES.length != 0) {
-    for (var node of RECENTLY_UPLOADED_NODES) {
-      if (node.style.display) { node.style.display = 'none'; }
-      $('#recent-uploads').append(node);
-      $(node).fadeIn(500);
-    }
-  } else return false;
-}
+  function displayRecentlyUploadedMusic() {
+    if (RECENTLY_UPLOADED_NODES.length != 0) {
+      for (var node of RECENTLY_UPLOADED_NODES) {
+        if (node.style.display) { node.style.display = 'none'; }
+        $('#recent-uploads').append(node);
+        $(node).fadeIn(500);
+      }
+    } else return false;
+  }
 
-/* Upload musics event */
-function setupUploadMusicsEvent() {
-  /* CSS Animation */
-  var CSS = {
-    dragenter: {
-      border: '2px solid hsl(210, 100%, 50%)',
-      transition: '.25s'
-    },
-    dragover: {
-      backgroundColor: 'hsl(210, 100%, 50%)',
-      transition: '.25s'
-    },
-    drop: {
-      backgroundColor: '#333',
-      border: '2px dotted hsl(210, 100%, 50%)',
-      transition: '.25s'
-    }
-  };
-  var dropped = true;
-  var dragDropElement = $('div#drag-and-drop-file-handler')
-  dragDropElement.on('dragenter', function(event) {
-    event.stopPropagation();
-    event.preventDefault();
-    $(this).css(CSS.dragenter);
-  }).on('dragover', function(event) {
-    event.stopPropagation();
-    event.preventDefault();
-    $(this).css(CSS.dragover);
-  }).on('drop', function(event) {
-    $(this).css(CSS.drop);
-    event.preventDefault();
-    var fileList = event.originalEvent.dataTransfer.files;
-    
-    disableNavBar();
-    dragDropElement.on('dragenter dragover drop', function(event) { event.preventDefault(); })
-    dragDropElement.css({
-      transition: '.25s',
-      backgroundColor: 'hsl(0, 100%, 60%)',
-      borderColor: 'hsl(0, 100%, 60%)',
-      boxShadow: '10px 10px 15px rgba(255, 100, 100, 0.2)',
-      cursor: 'wait'
-    });
-    $('#drag-and-drop-file-handler > p')[0].innerHTML = 'Please wait while MP3 uploading ...';
+  function updateAllMusics() {
+    console.log('updating...')
+    $.ajax({
+      url: BASE_URL + 'update_all_musics',
+      type: 'POST',
+      data: {},
+      dataType: 'json',
+      cache: false,
+      success: function(result) {
+        ALL_MUSICS = result;
+        for (var html of ALL_MUSIC_NODES) { $(html).unbind(); }
+        ALL_MUSIC_NODES = []
+        initializeAllMusicNodes(true);
+      },
+      error: function() { console.error('Cannot update the "ALL_MUSICS" params'); }
+    })
+  }
 
-    var duplicatedFiles = [];
-    function uploadFile(count) {
-      let file = fileList[count - 1]; 
-      if (file.type === 'audio/mp3') {
-        $.ajax({
-          type: 'POST',
-          url: BASE_URL + 'upload_musics',
-          data: { filename: file.name, filepath: file.path },
-          cache: false,
-          dataType: 'json',
-          success: function(data) {
-            if (data.error === 'file exists') {
-              duplicatedFiles.push(data.filename)
-              /* If file count isn't 0, keep uploading! */
-              recursivelyUpload(count);
-            } else {
-              /* Create Element */
-              var html = REQUEST_PARTIAL('upload_info', {
-                filename: data.filename,
-                uploaded: 'Uploaded at ' + data.uploaded
-              }, {
-                class: 'upload-info',
-                id: 'file-' + data.id
-              }, function(html) {
-                RECENTLY_UPLOADED_NODES.push(html)
+/* --------------------------------- Page Methods ------------------------------ */
 
-                if (CURRENT_PAGE === 'upload_musics') {
-                  $('#recent-uploads').prepend(html);
-                  $('#file-' + data.id).slideDown(500);
-                }
+/* ---------------------------- Upload Musics Event -------------------------- */
+  
+  function setupUploadMusicsEvent() {
+    /* CSS Animation */
+    var CSS = {
+      dragenter: {
+        border: '2px solid hsl(210, 100%, 50%)',
+        transition: '.25s'
+      },
+      dragover: {
+        backgroundColor: 'hsl(210, 100%, 50%)',
+        transition: '.25s'
+      },
+      drop: {
+        backgroundColor: '#333',
+        border: '2px dotted hsl(210, 100%, 50%)',
+        transition: '.25s'
+      }
+    };
+    var dropped = true;
+    var dragDropElement = $('div#drag-and-drop-file-handler')
+    dragDropElement.on('dragenter', function(event) {
+      event.stopPropagation();
+      event.preventDefault();
+      $(this).css(CSS.dragenter);
+    }).on('dragover', function(event) {
+      event.stopPropagation();
+      event.preventDefault();
+      $(this).css(CSS.dragover);
+    }).on('drop', function(event) {
+      $(this).css(CSS.drop);
+      event.preventDefault();
+      var fileList = event.originalEvent.dataTransfer.files;
+      
+      disableNavBar();
+      dragDropElement.unbind();
+      dragDropElement.on('dragenter dragover drop', function(event) { event.preventDefault(); })
+      dragDropElement.css({
+        transition: '.25s',
+        backgroundColor: 'hsl(0, 100%, 60%)',
+        borderColor: 'hsl(0, 100%, 60%)',
+        boxShadow: '10px 10px 15px rgba(255, 100, 100, 0.2)',
+        cursor: 'wait'
+      });
+      $('#drag-and-drop-file-handler > p')[0].innerHTML = 'Please wait while MP3 uploading ...';
+
+      var duplicatedFiles = [];
+      function uploadFile(count) {
+        let file = fileList[count - 1]; 
+        if (file.type === 'audio/mp3') {
+          $.ajax({
+            type: 'POST',
+            url: BASE_URL + 'upload_musics',
+            data: { filename: file.name, filepath: file.path },
+            cache: false,
+            dataType: 'json',
+            success: function(data) {
+              if (data.error === 'file exists') {
+                duplicatedFiles.push(data.filename)
                 /* If file count isn't 0, keep uploading! */
                 recursivelyUpload(count);
-              });
-            }
-          }
-        });
-      } else {
-        console.warn('Wrong MIME format');
-        /* If file count isn't 0, keep uploading! */
-        recursivelyUpload(count);
-      }
-    }
+              } else {
+                /* Create Element */
+                var html = REQUEST_PARTIAL('upload_info', {
+                  filename: data.filename,
+                  uploaded: 'Uploaded at ' + data.uploaded
+                }, {
+                  class: 'upload-info',
+                  id: 'file-' + data.id
+                }, function(html) {
+                  RECENTLY_UPLOADED_NODES.push(html);
 
-    function recursivelyUpload(count) {
-      if (--count != 0) {
-        setTimeout(function() { uploadFile(count) }, 500);
-      } else {
-        if (duplicatedFiles.length != 0) {
-          console.warn('should display duplicated files')
+                  if (CURRENT_PAGE === 'upload_musics') {
+                    $('#recent-uploads').prepend(html);
+                    $('#file-' + data.id).slideDown(500);
+                  }
+                  /* If file count isn't 0, keep uploading! */
+                  recursivelyUpload(count);
+                });
+              }
+            }
+          });
+        } else {
+          console.warn('Wrong MIME format');
+          /* If file count isn't 0, keep uploading! */
+          recursivelyUpload(count);
         }
+      }
+
+      function recursivelyUpload(count) {
+        if (--count != 0) {
+          setTimeout(function() { uploadFile(count) }, 500);
+        } else {
+          if (duplicatedFiles.length != 0) {
+            console.warn('should display duplicated files')
+          }
+          doneUpload();
+        }
+        return count;
+      }
+
+      function doneUpload() {
+        /* Update all musics */
+        updateAllMusics();
+        
+        /* Reset drag and drop element event */
+        dragDropElement.unbind();
         setupUploadMusicsEvent();
         enableNavBar();
         dragDropElement.css({
@@ -418,11 +464,11 @@ function setupUploadMusicsEvent() {
         });
         $('#drag-and-drop-file-handler > p')[0].innerHTML = 'Drag & Drop your MP3 Files and Upload';
       }
-      return count
-    }
 
-    /* Recursively upload files synchronously */
-    uploadFile(fileList.length);
+      /* Recursively upload files synchronously */
+      uploadFile(fileList.length);
 
-  });
-}
+    });
+  }
+
+/* ---------------------------- Upload Musics Event -------------------------- */
