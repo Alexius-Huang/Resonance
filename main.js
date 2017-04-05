@@ -11,7 +11,8 @@ let ENVIRONMENT = 'development'
 let $browser = {
   width: 1400,
   height: 900,
-  minWidth: 660
+  minWidth: 660,
+  minHeight: 600
 }
 
 function createWindow () {
