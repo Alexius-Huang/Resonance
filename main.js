@@ -73,6 +73,8 @@ function getCurrentTime(format) {
   return moment().format(format || 'YYYY-MM-DD hh:mm:ss')
 }
 
+let ALL_MUSICS;
+
 http.createServer(function(request, response) {
   console.log(`${request.method} :: http://localhost:${port}${request.url} at ${new Date()}`);
   
@@ -93,6 +95,15 @@ http.createServer(function(request, response) {
   function jsonResponse(obj) {
     response.writeHead(200, {"Content-Type": "application/json"})
     response.end(JSON.stringify(obj))
+  }
+
+  function plainResponse(text) {
+    response.writeHead(200, {"Content-Type": "text/plain"})
+    response.end(text)
+  }
+
+  function getMusic(id) {
+    return (ALL_MUSICS.filter(function(music) { return music.id == id })[0])
   }
 
   function postRequest(request, callback) {
@@ -136,19 +147,33 @@ http.createServer(function(request, response) {
     }
   } else if (request.method === 'POST') {
     switch(request.url) {
+      case '/init_server':
+        postRequest(request, function(data) {
+          ALL_MUSICS = parseJSONData('music')
+          plainResponse('success')
+        })
+        break;
+
       case '/get_musics':
         postRequest(request, function(data) {
           jsonResponse(parseJSONData('music'))
         })
         break;
 
+      case '/get_music_path':
+        postRequest(request, function(data) {
+          response.writeHead(200, { "Content-Type": "text/plain" })
+          response.end(`file://${__dirname}/public/music/${getMusic(data.id).name}`)
+        })
+        break;
+
       case '/upload_musics':
         postRequest(request, function(data) {
-          fs.exists(__dirname + '/uploads/' + data.filename, function(exists) {
+          fs.exists(__dirname + '/public/music/' + data.filename, function(exists) {
             if (exists) {
               jsonResponse({ error: 'file exists', filename: data.filename })
             } else {
-              fs.createReadStream(data.filepath).pipe(fs.createWriteStream(__dirname + '/uploads/' + data.filename));
+              fs.createReadStream(data.filepath).pipe(fs.createWriteStream(__dirname + '/public/music/' + data.filename));
               
               let userData = parseJSONData('user')
               userData.music_count++

@@ -17,6 +17,8 @@ var ALL_MUSICS = []
 var ALL_MUSIC_NODES = []
 var RECENTLY_UPLOADED = []
 var RECENTLY_UPLOADED_NODES = []
+var $audio = null;
+var $audio_source = null;
 
 /* ---------------------- HTTP Request Helpers --------------------- */
   function GET(page, callback) {
@@ -130,17 +132,35 @@ var RECENTLY_UPLOADED_NODES = []
 /* ------------------------------ Initializations --------------------------- */
   /* Initialize when opening the app */
   function init() {
-    $('#li-main').addClass('active');
-    GET('main', function() {
-      getMusicFiles(function(data) {
-        var oneDayAgo = moment().subtract(1, 'day').format(DATETIME_FORMAT);
-        
-        ALL_MUSICS = data;
-        RECENTLY_UPLOADED = data.filter(function(data) { return oneDayAgo < data.uploaded });
+    initializeServerSide(function() {
+      /* Init params */
+      $audio = document.getElementById('audio');
+      $audio_source = document.getElementById('audio-source');
 
-        initializeAllMusicNodes();
-        initializeRecentUploadedNodes();
-      })
+      /* Get main page */
+      $('#li-main').addClass('active');
+      GET('main', function() {
+        getMusicFiles(function(data) {
+          var oneDayAgo = moment().subtract(1, 'day').format(DATETIME_FORMAT);
+          
+          ALL_MUSICS = data;
+          RECENTLY_UPLOADED = data.filter(function(data) { return oneDayAgo < data.uploaded });
+
+          initializeAllMusicNodes();
+          initializeRecentUploadedNodes();
+        })
+      });
+    });
+  }
+
+  function initializeServerSide(callback) {
+    $.ajax({
+      url: BASE_URL + 'init_server',
+      type: 'POST',
+      cache: false,
+      data: {},
+      success: function() { callback.call() },
+      error: function() { console.error('server error'); }
     });
   }
 
@@ -158,6 +178,22 @@ var RECENTLY_UPLOADED_NODES = []
             // $('#recent-uploads').prepend(html);
             // $('#file-' + music.id).slideDown(500);
           }
+          /* Setup Events */
+          $(html).on('click', function(event) {
+            $.ajax({
+              type: 'POST',
+              url: BASE_URL + 'get_music_path',
+              data: { id: music.id },
+              cache: false,
+              success: function(filepath) {
+                $audio_source.setAttribute('src', filepath);
+                $audio.load();
+                $audio.play();
+              },
+              error: function() { console.warn('Could not find the filepath'); }
+            })
+          });
+
           /* If file count isn't 0, keep uploading! */
           if (--count !== 0) recursivelyAppendPartial(count);
         });
