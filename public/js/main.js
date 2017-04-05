@@ -259,7 +259,13 @@ var RECENTLY_UPLOADED_NODES = []
 /* --------------------------------- Page Methods ------------------------------ */
 
 function displayAllMusics() {
-
+  if (ALL_MUSIC_NODES.length != 0) {
+    for (var node of ALL_MUSIC_NODES) {
+      if (node.style.display) { node.style.display = 'none'; }
+      $('#all-musics').append(node);
+      $(node).fadeIn(500);
+    }
+  } else return false;
 }
 
 function displayRecentlyUploadedMusic() {

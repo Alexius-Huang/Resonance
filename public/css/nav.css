@@ -7,7 +7,7 @@ div.aside-nav {
   background-color: #333;
   position: fixed;
   box-shadow: 10px 0 15px rgba(0, 0, 0, 0.2);
-  z-index: 1;
+  z-index: 2;
 }
 ul.nav-list {
   box-sizing: border-box;
