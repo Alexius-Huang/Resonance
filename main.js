@@ -9,11 +9,13 @@ const port = 3001
 let win
 let ENVIRONMENT = 'development'
 let $browser = {
-  width: 1400, height: 900
+  width: 1400,
+  height: 900,
+  minWidth: 660
 }
 
 function createWindow () {
-  win = new BrowserWindow({ width: $browser.width, height: $browser.height })
+  win = new BrowserWindow($browser)
 
   win.loadURL(url.format({
     pathname: path.join(__dirname, 'public/general.html'),

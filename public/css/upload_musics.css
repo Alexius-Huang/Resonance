@@ -12,7 +12,6 @@ div#upload-musics > div#drag-and-drop-file-handler {
   margin: 0 auto;
   width: 80%;
   margin-top: 50px;
-  height: 200px;
   font-size: 0;
 }
 div#upload-musics > div#drag-and-drop-file-handler:before {
@@ -24,7 +23,6 @@ div#upload-musics > div#drag-and-drop-file-handler:before {
   vertical-align: middle;
 }
 div#upload-musics > div#drag-and-drop-file-handler > p {
-  font-size: 25px;
   display: inline-block;
   text-align: center;
   vertical-align: middle;
@@ -44,12 +42,50 @@ div#recent-uploads > div.upload-info {
   box-shadow: 0px 0px 5px hsl(210, 100%, 50%);
   word-break: break-all;
 }
-div#recent-uploads > div.upload-info > p + p {
-  margin-top: 10px;
-}
+
+div#upload-musics > div#drag-and-drop-file-handler,
+div#upload-musics > div#drag-and-drop-file-handler > p, 
+div#recent-uploads > div.upload-info > p + p,
 div#recent-uploads > div.upload-info > p.__filename {
-  line-height: 23px;
+  -webkit-transition-timing-function: ease; /* Safari and Chrome */
+  transition-timing-function: ease;
+  transition: .5s;
 }
-div#recent-uploads > div.upload-info > p.__uploaded {
-  font-size: 14px;
+
+@media screen and (max-width: 767px) {
+  div#upload-musics > div#drag-and-drop-file-handler {
+    height: 160px;
+  }
+  div#upload-musics > div#drag-and-drop-file-handler > p {
+    font-size: 16px;
+  }
+  div#recent-uploads > div.upload-info > p + p {
+    margin-top: 7px;
+  }
+  div#recent-uploads > div.upload-info > p.__filename {
+    line-height: 20px;
+    font-size: 14px;
+  }
+  div#recent-uploads > div.upload-info > p.__uploaded {
+    font-size: 11px;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  div#upload-musics > div#drag-and-drop-file-handler {
+    height: 200px;
+  }
+  div#upload-musics > div#drag-and-drop-file-handler > p {
+    font-size: 20px;
+  }
+  div#recent-uploads > div.upload-info > p + p {
+    margin-top: 10px;
+  }
+  div#recent-uploads > div.upload-info > p.__filename {
+    line-height: 23px;
+    font-size: 16px;
+  }
+  div#recent-uploads > div.upload-info > p.__uploaded {
+    font-size: 14px;
+  }
 }

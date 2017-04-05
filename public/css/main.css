@@ -1,7 +1,3 @@
-div.wrapper {
-  margin-left: 210px;
-}
-
 div#main-bgi {
   background-image: url("../img/resonance_main_theme.jpg");
   background-position: center center;
@@ -44,4 +40,43 @@ div#main-bgi-title:hover > p, div#main-bgi-title:hover > h1 {
   color: white;
   transition: .25s;
   cursor: default;
+}
+
+div#main-bgi-title > h1,
+div#main-bgi-title > p {
+  -webkit-transition-timing-function: ease;
+  transition-timing-function: ease;
+  transition: .5s;
+}
+
+@media screen and (max-width: 767px) {
+  div.wrapper {
+    margin-left: 160px;
+  }
+  
+}
+
+@media screen and (min-width: 768px) {
+  div.wrapper {
+    margin-left: 210px;
+  }
+}
+
+@media screen and (max-width: 1048px) {
+  div#main-bgi-title > h1 {
+    font-size: 70px;
+  }
+  div#main-bgi-title > p {
+    font-size: 20px;
+  }
+}
+
+
+@media screen and (max-width: 768px) {
+  div#main-bgi-title > h1 {
+    font-size: 50px;
+  }
+  div#main-bgi-title > p {
+    font-size: 16px;
+  }
 }

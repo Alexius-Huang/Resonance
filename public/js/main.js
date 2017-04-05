@@ -13,7 +13,10 @@ var PARTIAL_JSON = {
     }
   }
 };
+var ALL_MUSICS = []
+var ALL_MUSIC_NODES = []
 var RECENTLY_UPLOADED = []
+var RECENTLY_UPLOADED_NODES = []
 
 /* ---------------------- HTTP Request Helpers --------------------- */
   function GET(page, callback) {
@@ -70,9 +73,11 @@ var RECENTLY_UPLOADED = []
     } else callback.call();
   }
 
-  function REQUEST_PARTIAL(partial, data, classname, callback) {
+  function REQUEST_PARTIAL(partial, data, attributes, callback) {
     var resultNode = document.createElement('div');
-    resultNode.className = classname;
+    for (var key of Object.keys(attributes)) {
+      resultNode.setAttribute(key, attributes[key]);
+    }
 
     $.ajax({
       url: BASE_URL + 'partial',
@@ -122,40 +127,71 @@ var RECENTLY_UPLOADED = []
   }
 /* ------------------------------ Helper Functions --------------------------- */
 
-/* Initialize when opening the app */
-function init() {
-  $('#li-main').addClass('active');
-  GET('main', function() {
-    getMusicFiles(function(data) {
-      var oneDayAgo = moment().subtract(1, 'day').format(DATETIME_FORMAT);
-      var musicArray = data.filter(function(data) { return oneDayAgo < data.uploaded });
+/* ------------------------------ Initializations --------------------------- */
+  /* Initialize when opening the app */
+  function init() {
+    $('#li-main').addClass('active');
+    GET('main', function() {
+      getMusicFiles(function(data) {
+        var oneDayAgo = moment().subtract(1, 'day').format(DATETIME_FORMAT);
+        
+        ALL_MUSICS = data;
+        RECENTLY_UPLOADED = data.filter(function(data) { return oneDayAgo < data.uploaded });
 
-      if (musicArray.length != 0) {
-        function recursivelyAppendPartial(count) {
-          var data = musicArray[count - 1];
-          var html = REQUEST_PARTIAL('upload_info', {
-            filename: data.name,
-            uploaded: 'Uploaded at ' + data.uploaded
-          },'upload-info', function(html) {
-            html.setAttribute('id', 'file-' + data.id);
-            RECENTLY_UPLOADED.push(html)
+        initializeAllMusicNodes();
+        initializeRecentUploadedNodes();
+      })
+    });
+  }
 
-            if (CURRENT_PAGE === 'upload_musics') {
-              $('#recent-uploads').prepend(html);
-              $('#file-' + data.id).slideDown(500);
-            }
-            /* If file count isn't 0, keep uploading! */
-            count--;
-            if (count !== 0) {
-              recursivelyAppendPartial(count);
-            }
-          });
-        }
-        recursivelyAppendPartial(musicArray.length)
+  function initializeAllMusicNodes() {
+    if (ALL_MUSICS.length != 0) {
+      function recursivelyAppendPartial(count) {
+        var music = ALL_MUSICS[count - 1];
+        var html = REQUEST_PARTIAL('music', { musicname: music.name },
+        {
+          class: 'music',
+          id: 'music' + music.id
+        }, function(html) {
+          ALL_MUSIC_NODES.push(html);
+          if (CURRENT_PAGE === 'all_musics') {
+            // $('#recent-uploads').prepend(html);
+            // $('#file-' + music.id).slideDown(500);
+          }
+          /* If file count isn't 0, keep uploading! */
+          if (--count !== 0) recursivelyAppendPartial(count);
+        });
       }
-    })
-  });
-}
+      recursivelyAppendPartial(ALL_MUSICS.length)
+    }
+  }
+
+  function initializeRecentUploadedNodes() {
+    if (RECENTLY_UPLOADED.length != 0) {
+      function recursivelyAppendPartial(count) {
+        var music = RECENTLY_UPLOADED[count - 1];
+        var html = REQUEST_PARTIAL('upload_info', {
+          filename: music.name,
+          uploaded: 'Uploaded at ' + music.uploaded
+        }, {
+          class: 'upload-info',
+          id: 'file-' + music.id 
+        }, function(html) {
+          RECENTLY_UPLOADED_NODES.push(html)
+          
+          if (CURRENT_PAGE === 'upload_musics') {
+            $('#recent-uploads').prepend(html);
+            $('#file-' + music.id).slideDown(500);
+          }
+          /* If file count isn't 0, keep uploading! */
+          if (--count !== 0) recursivelyAppendPartial(count);
+        });
+      }
+      recursivelyAppendPartial(RECENTLY_UPLOADED.length)
+    }
+  }
+
+/* ------------------------------ Initializations --------------------------- */
 
 /* --------------------------------- Page Events ------------------------------ */
   $(document).ready(function() {
@@ -178,7 +214,7 @@ function init() {
     $('#li-all_musics').on('click', function(event) {
       event.preventDefault();
       GET('all_musics', function() {
-      
+        displayAllMusics();
       });
     });
 
@@ -193,7 +229,7 @@ function init() {
     $('#li-playlists').on('click', function(event) {
       event.preventDefault();
       GET('playlists', function() {
-      
+        
       });
     });
     
@@ -220,9 +256,15 @@ function init() {
   });
 /* --------------------------------- Page Events ------------------------------ */
 
+/* --------------------------------- Page Methods ------------------------------ */
+
+function displayAllMusics() {
+
+}
+
 function displayRecentlyUploadedMusic() {
-  if (RECENTLY_UPLOADED.length != 0) {
-    for (var node of RECENTLY_UPLOADED) {
+  if (RECENTLY_UPLOADED_NODES.length != 0) {
+    for (var node of RECENTLY_UPLOADED_NODES) {
       if (node.style.display) { node.style.display = 'none'; }
       $('#recent-uploads').append(node);
       $(node).fadeIn(500);
@@ -294,9 +336,11 @@ function setupUploadMusicsEvent() {
               var html = REQUEST_PARTIAL('upload_info', {
                 filename: data.filename,
                 uploaded: 'Uploaded at ' + data.uploaded
-              },'upload-info', function(html) {
-                html.setAttribute('id', 'file-' + data.id);
-                RECENTLY_UPLOADED.push(html)
+              }, {
+                class: 'upload-info',
+                id: 'file-' + data.id
+              }, function(html) {
+                RECENTLY_UPLOADED_NODES.push(html)
 
                 if (CURRENT_PAGE === 'upload_musics') {
                   $('#recent-uploads').prepend(html);
@@ -316,8 +360,7 @@ function setupUploadMusicsEvent() {
     }
 
     function recursivelyUpload(count) {
-      count--;
-      if (count != 0) {
+      if (--count != 0) {
         setTimeout(function() { uploadFile(count) }, 500);
       } else {
         if (duplicatedFiles.length != 0) {

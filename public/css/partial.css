@@ -1,7 +1,6 @@
 h1#__title {
   font-family: 'space', sans-serif;
   font-weight: normal;
-  font-size: 55px;
   padding-top: 30px;
   padding-left: 40px;
   margin: 0 -40px;
@@ -11,4 +10,20 @@ h1#__title {
   text-shadow: 0 0 15px hsl(210, 100%, 50%);
   background-image: linear-gradient(0deg, hsl(210, 70%, 30%) 0%, #223 70%);
   box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+}
+
+@media screen and (max-width: 767px) {
+  h1#__title {
+    white-space: nowrap;
+    font-size: 40px;
+    transition: .25s;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  h1#__title {
+    white-space: nowrap;
+    font-size: 55px;
+    transition: .25s;
+  }
 }

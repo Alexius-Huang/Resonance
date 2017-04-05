@@ -21,7 +21,6 @@ ul.nav-list > li {
   transition: .25s;
 }
 ul.nav-list > li:first-child {
-  font-size: 20px;
   height: 40px;
   line-height: 40px;
   background-color: #223;
@@ -43,12 +42,46 @@ ul.nav-list > li:hover {
   transition: .25s;
   color: hsl(210, 80%, 50%);
 }
+
+
+ul.nav-list > li:first-child,
+ul.nav-list > li,
+div.aside-nav {
+  -webkit-transition-timing-function: ease;
+  transition-timing-function: ease;
+  transition: .25s;
+}
+
 @media screen and (max-width: 767px) {
+  ul.nav-list > li:first-child {
+    font-size: 15px;
+    line-height: 30px;
+    height: 30px;
+  }
+
+  ul.nav-list > li {
+    font-size: 14px;
+    line-height: 18px;
+    height: 18px;
+  }
+
   div.aside-nav {
-    width: 210px;
+    width: 160px;
   }
 }
 @media screen and (min-width: 768px) {
+  ul.nav-list > li:first-child {
+    font-size: 20px;
+    line-height: 40px;
+    height: 40px;
+  }
+
+  ul.nav-list > li {
+    font-size: 16px;
+    line-height: 20px;
+    height: 20px;
+  }
+
   div.aside-nav {
     width: 210px;
   }
