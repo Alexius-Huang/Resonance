@@ -7,7 +7,7 @@ div#all-musics > div.music {
   width: 80%;
   padding: 20px;
   border-bottom: 1px solid hsl(210, 100%, 40%);
-  transition: .25s;
+  /*transition: .25s;*/
 }
 div#all-musics > div.music:hover {
   background-color: #446;

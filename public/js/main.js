@@ -21,6 +21,8 @@ var RECENTLY_UPLOADED_NODES = []
 /* Audio params */
 var $audio = null;
 var $audio_source = null;
+var $audio_player_footer = null;
+var $audio_player_gradient_bg = null;
 
 /* ---------------------- HTTP Request Helpers --------------------- */
   function GET(page, callback) {
@@ -138,10 +140,14 @@ var $audio_source = null;
       /* Init params */
       $audio = document.getElementById('audio');
       $audio_source = document.getElementById('audio-source');
+      $audio_player_footer = document.getElementById('audio-player-footer');
+      $audio_player_gradient_bg = document.getElementById('audio-player-gradient-bg');
 
       /* Get main page */
       $('#li-main').addClass('active');
       GET('main', function() {
+        setupConditionalHidePlayerFooterEvent();
+
         getMusicFiles(function(data) {
           var oneDayAgo = moment().subtract(1, 'day').format(DATETIME_FORMAT);
           
@@ -242,6 +248,24 @@ var $audio_source = null;
 
 /* -------------------------------- Audio Events ------------------------------ */
 
+/* -------------------------------- Style Events ------------------------------ */
+
+  function setupConditionalHidePlayerFooterEvent() {
+    $('ul.nav-list > li').on('click', function(event) {
+      if (CURRENT_PAGE === 'main' || CURRENT_PAGE === 'info') {
+        if ($audio_player_footer.style.display != 'none') {
+          $($audio_player_footer).fadeOut(250);
+          $($audio_player_gradient_bg).fadeOut(250);
+        }
+      } else if ($audio_player_footer.style.display == 'none') {
+        $($audio_player_footer).fadeIn(250);
+        $($audio_player_gradient_bg).fadeIn(250);
+      }
+    });
+  }
+
+/* -------------------------------- Style Events ------------------------------ */
+
 /* --------------------------------- Page Events ------------------------------ */
   $(document).ready(function() {
     init();
@@ -309,11 +333,20 @@ var $audio_source = null;
 
   function displayAllMusics() {
     if (ALL_MUSIC_NODES.length != 0) {
-      for (var node of ALL_MUSIC_NODES) {
-        if (node.style.display) { node.style.display = 'none'; }
+      function displayNodeRecursively(count) {
+        var node = ALL_MUSIC_NODES[count - 1];
         $('#all-musics').append(node);
-        $(node).fadeIn(500);
+        node.style.display = 'none';
+        $(node).fadeIn(250, function() {
+          if (--count != 0) displayNodeRecursively(count);
+        });
       }
+      displayNodeRecursively(ALL_MUSIC_NODES.length);
+      // for (var node of ALL_MUSIC_NODES) {
+      //   node.style.display = 'none';
+      //   $('#all-musics').append(node);
+      //   $(node).fadeIn(500);
+      // }
     } else return false;
   }
 

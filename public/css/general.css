@@ -49,37 +49,6 @@ a {
   clear: both;
 }
 
-div#audio-player-footer.trapezoid {
-  border-bottom: 20vh solid #333;
-  border-left: 10vh solid transparent;
-  height: 0;
-  width: 50%;
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  box-shadow: 10vh -5px 15px rgba(0, 0, 0, 0.5);
-}
-div#audio-player-footer > div#audio-player-img {
-  position: absolute;
-  width: 20vh;
-  height: 20vh;
-  left: -5vh;
-  top: -5vh;
-  background-color: #555;
-  box-shadow:
-    5px 5px 15px hsla(210, 100%, 30%, 0.3),
-    -5px -5px 15px rgba(0, 0, 0, 0.3);
-}
-div#audio-player-gradient-bg {
-  position: fixed;
-  bottom: 0;
-  right: 0;
-  width: 100%;
-  height: 20vh;
-  background-color: transparent;
-  background-image: linear-gradient(0deg, hsla(210, 100%, 60%, 0.2) 0%, rgba(33, 33, 33, 0) 30%);
-}
-
 /* Grid */
 @media screen and (max-width: 767px) {
   .col-sm-1         { width: 8.33333%;        float: left; }

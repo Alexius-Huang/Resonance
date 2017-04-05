@@ -5,6 +5,7 @@
   <title>Electron Music Player - Project Resonance</title>
   <link rel="stylesheet" href="./css/reset.css">
   <link rel="stylesheet" href="./css/general.css">
+  <link rel="stylesheet" href="./css/audio_player.css">
   <link rel="stylesheet" href="./css/nav.css">
   <link rel="stylesheet" href="./css/main.css">
   <link rel="stylesheet" href="./css/all_musics.css">
@@ -43,9 +44,27 @@
     </audio>
   </div>
 
-  <div id="audio-player-footer" class="trapezoid">
+  <div id="audio-player-footer" class="trapezoid" style="display: none;">
     <div id="audio-player-img"></div>
+    <div id="audio-player-info-group">
+      <div id="audio-info">
+        <div id="audio-info-wrapper">
+          <p>Hello</p>
+        </div>
+      </div>
+      <div id="audio-btn-group">
+        <div id="audio-btn-wrapper">
+          <div class="player-btn"><i class="fa fa-fast-backward"></i></div>
+          <div class="player-btn"><i class="fa fa-backward"></i></div>
+          <div class="player-btn"><i class="fa fa-stop"></i></div>
+          <div class="player-btn larger"><i class="fa fa-play"></i></div>
+          <div class="player-btn"><i class="fa fa-pause"></i></div>
+          <div class="player-btn"><i class="fa fa-forward"></i></div>
+          <div class="player-btn"><i class="fa fa-fast-forward"></i></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="audio-player-gradient-bg"></div>
+  <div id="audio-player-gradient-bg" style="display: none"></div>
 </body>
 </html>
