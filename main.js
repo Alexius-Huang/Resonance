@@ -68,7 +68,7 @@ function writeJSONData(type, json, callback) {
 }
 
 function getCurrentTime(format) {
-  return moment().format(format || 'YYYY:MM:DD hh:mm:ss')
+  return moment().format(format || 'YYYY-MM-DD hh:mm:ss')
 }
 
 http.createServer(function(request, response) {
@@ -134,6 +134,12 @@ http.createServer(function(request, response) {
     }
   } else if (request.method === 'POST') {
     switch(request.url) {
+      case '/get_musics':
+        postRequest(request, function(data) {
+          jsonResponse(parseJSONData('music'))
+        })
+        break;
+
       case '/upload_musics':
         postRequest(request, function(data) {
           fs.exists(__dirname + '/uploads/' + data.filename, function(exists) {
@@ -168,6 +174,7 @@ http.createServer(function(request, response) {
           })
         })
         break;
+
       case '/partial':
         postRequest(request, function(data) {
           render(`partials/_${data.partial}`)

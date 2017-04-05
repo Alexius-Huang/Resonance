@@ -1,6 +1,7 @@
 var BASE_URL = 'http://127.0.0.1:3001/';
 var PARTIAL_URL = BASE_URL + 'partials/';
 var CURRENT_PAGE = null;
+var DATETIME_FORMAT = 'YYYY-MM-DD hh:mm:ss'
 var PARTIAL_JSON = {
   _caption: {
     __title: {
@@ -14,167 +15,210 @@ var PARTIAL_JSON = {
 };
 var RECENTLY_UPLOADED = []
 
-function GET(page, callback) {
-  /* Change Side Bar Style */
-  if (CURRENT_PAGE === page) { return false; }
+/* ---------------------- HTTP Request Helpers --------------------- */
+  function GET(page, callback) {
+    /* Change Side Bar Style */
+    if (CURRENT_PAGE === page) { return false; }
 
-  $('#li-' + CURRENT_PAGE).removeClass('active');
-  CURRENT_PAGE = page;
-  $('#li-' + CURRENT_PAGE).addClass('active');
+    $('#li-' + CURRENT_PAGE).removeClass('active');
+    CURRENT_PAGE = page;
+    $('#li-' + CURRENT_PAGE).addClass('active');
 
-  $.ajax({
-    url: BASE_URL + CURRENT_PAGE,
-    type: 'GET',
-    success: function(html) {
-      $('#output').fadeOut(250, function() {
-        $('#output').html(html);
-        GET_PARTIALS(function() { 
-          $('#output').fadeIn(250, function() {
-            callback.call();
+    $.ajax({
+      url: BASE_URL + CURRENT_PAGE,
+      type: 'GET',
+      success: function(html) {
+        $('#output').fadeOut(250, function() {
+          $('#output').html(html);
+          GET_PARTIALS(function() { 
+            $('#output').fadeIn(250, function() {
+              callback.call();
+            });
           });
         });
-      });
-    },
-    error: function() {
-      console.error('Error rendering : ' + BASE_URL + CURRENT_PAGE);
-    }
-  });
-}
-
-function GET_PARTIALS(callback) {
-  if ($('.partial').length != 0) {
-    $('.partial').each(function() {
-      var node = $(this);
-      var partialID = node.attr('id');
-      $.ajax({
-        url: PARTIAL_URL + partialID,
-        type: 'GET',
-        success: function(html) {
-          node.html(html);
-
-          /* Fill in partial template data */
-          var partialData = PARTIAL_JSON[partialID];
-          for (var key of Object.keys(partialData)) {
-            $('#' + key).html(partialData[key][CURRENT_PAGE]);
-          }
-
-          callback.call();
-        },
-        error: function() {
-          console.error('Error rendering : ' + PARTIAL_URL + CURRENT_PAGE);
-        }
-      });
-    });
-  } else callback.call();
-}
-
-function REQUEST_PARTIAL(partial, data, classname, callback) {
-  var resultNode = document.createElement('div');
-  resultNode.className = classname;
-
-  $.ajax({
-    url: BASE_URL + 'partial',
-    type: 'POST',
-    data: { partial: partial },
-    cache: false,
-    success: function(html) {
-      resultNode.innerHTML = html
-      
-      for (var key of Object.keys(data)) {
-        resultNode.getElementsByClassName('__' + key)[0].innerHTML = data[key];
+      },
+      error: function() {
+        console.error('Error rendering : ' + BASE_URL + CURRENT_PAGE);
       }
+    });
+  }
 
-      callback(resultNode);
-    }
-  });
-}
+  function GET_PARTIALS(callback) {
+    if ($('.partial').length != 0) {
+      $('.partial').each(function() {
+        var node = $(this);
+        var partialID = node.attr('id');
+        $.ajax({
+          url: PARTIAL_URL + partialID,
+          type: 'GET',
+          success: function(html) {
+            node.html(html);
 
+            /* Fill in partial template data */
+            var partialData = PARTIAL_JSON[partialID];
+            for (var key of Object.keys(partialData)) {
+              $('#' + key).html(partialData[key][CURRENT_PAGE]);
+            }
+
+            callback.call();
+          },
+          error: function() {
+            console.error('Error rendering : ' + PARTIAL_URL + CURRENT_PAGE);
+          }
+        });
+      });
+    } else callback.call();
+  }
+
+  function REQUEST_PARTIAL(partial, data, classname, callback) {
+    var resultNode = document.createElement('div');
+    resultNode.className = classname;
+
+    $.ajax({
+      url: BASE_URL + 'partial',
+      type: 'POST',
+      data: { partial: partial },
+      cache: false,
+      success: function(html) {
+        resultNode.innerHTML = html
+        
+        for (var key of Object.keys(data)) {
+          resultNode.getElementsByClassName('__' + key)[0].innerHTML = data[key];
+        }
+
+        callback(resultNode);
+      }
+    });
+  }
+/* ---------------------- HTTP Request Helpers --------------------- */
+
+/* ------------------------------ Helper Functions --------------------------- */
+  function getMusicFiles(callback) {
+    $.ajax({
+      url: BASE_URL + 'get_musics',
+      type: 'POST',
+      dataType: 'json',
+      cache: false,
+      success: function(data) { callback(data) }
+    });
+  }
+
+  function disableNavBar() {
+    var shade = document.createElement('div');
+    shade.style.height = '100vh';
+    shade.style.width = '210px';
+    shade.style.position = 'fixed';
+    shade.style.left = 0;
+    shade.style.top = 0;
+    shade.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+    shade.style.zIndex = 2;
+    shade.setAttribute('id', 'disable-nav-shade');
+    document.body.appendChild(shade);
+  }
+
+  function enableNavBar() {
+    var shade = document.getElementById('disable-nav-shade')
+    shade.parentNode.removeChild(shade);
+  }
+/* ------------------------------ Helper Functions --------------------------- */
+
+/* Initialize when opening the app */
 function init() {
   $('#li-main').addClass('active');
   GET('main', function() {
+    getMusicFiles(function(data) {
+      var oneDayAgo = moment().subtract(1, 'day').format(DATETIME_FORMAT);
+      var musicArray = data.filter(function(data) { return oneDayAgo < data.uploaded });
 
+      if (musicArray.length != 0) {
+        function recursivelyAppendPartial(count) {
+          var data = musicArray[count - 1];
+          var html = REQUEST_PARTIAL('upload_info', {
+            filename: data.name,
+            uploaded: 'Uploaded at ' + data.uploaded
+          },'upload-info', function(html) {
+            html.setAttribute('id', 'file-' + data.id);
+            RECENTLY_UPLOADED.push(html)
+
+            if (CURRENT_PAGE === 'upload_musics') {
+              $('#recent-uploads').prepend(html);
+              $('#file-' + data.id).slideDown(500);
+            }
+            /* If file count isn't 0, keep uploading! */
+            count--;
+            if (count !== 0) {
+              recursivelyAppendPartial(count);
+            }
+          });
+        }
+        recursivelyAppendPartial(musicArray.length)
+      }
+    })
   });
 }
 
-function disableNavBar() {
-  var shade = document.createElement('div');
-  shade.style.height = '100vh';
-  shade.style.width = '210px';
-  shade.style.position = 'fixed';
-  shade.style.left = 0;
-  shade.style.top = 0;
-  shade.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-  shade.style.zIndex = 2;
-  shade.setAttribute('id', 'disable-nav-shade');
-  document.body.appendChild(shade);
-}
+/* --------------------------------- Page Events ------------------------------ */
+  $(document).ready(function() {
+    init();
 
-function enableNavBar() {
-  var shade = document.getElementById('disable-nav-shade')
-  shade.parentNode.removeChild(shade);
-}
+    $('#li-main').on('click', function(event) {
+      event.preventDefault();
+      GET('main', function() {
 
-$(document).ready(function() {
-  init();
-
-  $('#li-main').on('click', function(event) {
-    event.preventDefault();
-    GET('main', function() {
-
+      });
     });
-  });
 
-  $('#li-header').on('click', function(event) {
-    event.preventDefault();
-    GET('info', function() {
+    $('#li-header').on('click', function(event) {
+      event.preventDefault();
+      GET('info', function() {
 
+      });
     });
-  });
 
-  $('#li-all_musics').on('click', function(event) {
-    event.preventDefault();
-    GET('all_musics', function() {
-    
-    });
-  });
-
-  $('#li-upload_musics').on('click', function(event) {
-    event.preventDefault();
-    GET('upload_musics', function() {
-      displayRecentlyUploadedMusic();
-      setupUploadMusicsEvent();
-    });
-  });
-  
-  $('#li-playlists').on('click', function(event) {
-    event.preventDefault();
-    GET('playlists', function() {
-    
-    });
-  });
-  
-  $('#li-playing').on('click', function(event) {
-    event.preventDefault();
-    GET('playing', function() {
-    
-    });
-  });
-  
-  $('#li-setting').on('click', function(event) {
-    event.preventDefault();
-    GET('setting', function() {
-    
-    });
-  });
-  
-  $('#li-info').on('click', function(event) {
-    event.preventDefault();
-    GET('info', function() {
+    $('#li-all_musics').on('click', function(event) {
+      event.preventDefault();
+      GET('all_musics', function() {
       
+      });
+    });
+
+    $('#li-upload_musics').on('click', function(event) {
+      event.preventDefault();
+      GET('upload_musics', function() {
+        displayRecentlyUploadedMusic();
+        setupUploadMusicsEvent();
+      });
+    });
+    
+    $('#li-playlists').on('click', function(event) {
+      event.preventDefault();
+      GET('playlists', function() {
+      
+      });
+    });
+    
+    $('#li-playing').on('click', function(event) {
+      event.preventDefault();
+      GET('playing', function() {
+      
+      });
+    });
+    
+    $('#li-setting').on('click', function(event) {
+      event.preventDefault();
+      GET('setting', function() {
+      
+      });
+    });
+    
+    $('#li-info').on('click', function(event) {
+      event.preventDefault();
+      GET('info', function() {
+        
+      });
     });
   });
-});
-
+/* --------------------------------- Page Events ------------------------------ */
 
 function displayRecentlyUploadedMusic() {
   if (RECENTLY_UPLOADED.length != 0) {
