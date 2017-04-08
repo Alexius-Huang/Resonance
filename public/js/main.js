@@ -20,10 +20,20 @@ var RECENTLY_UPLOADED_NODES = []
 
 /* Audio params */
 var $audio = null;
-var $audio_source = null;
 var $audio_player_footer = null;
 var $audio_player_gradient_bg = null;
 var $audio_btn = {};
+
+/* Create audio context */
+var AUDIO = new (window.AudioContext || window.webkitAudioContext)();
+
+/* Create and configure analyzer node and storage buffer */
+var ANALYSER = AUDIO.createAnalyser();
+ANALYSER.fftSize = 1024;
+var BUFFER_LENGTH = ANALYSER.frequencyBinCount;
+var DATA_ARRAY = new Uint8Array(BUFFER_LENGTH);
+var BARWIDTH = null;
+var $visualizeElement = null;
 
 /* ---------------------- HTTP Request Helpers --------------------- */
   function GET(page, callback) {
@@ -193,7 +203,6 @@ var $audio_btn = {};
     initializeServerSide(function() {
       /* Init params */
       $audio = document.getElementById('audio');
-      $audio_source = document.getElementById('audio-source');
       $audio_player_footer = document.getElementById('audio-player-footer');
       $audio_player_gradient_bg = document.getElementById('audio-player-gradient-bg');
       $audio_btn.fast_backward = $('#audio-fast-backward');
@@ -291,6 +300,101 @@ var $audio_btn = {};
 
 /* ------------------------------ Initializations --------------------------- */
 
+/* ---------------------------- Audio Visualizations --------------------------- */
+
+  function initializaAudioParams() {
+    var $visualize = $('#audio-info-wrapper');
+    var barwidth = $visualize.width() / (bufferLength - 100) * 4;
+  }
+
+  for (var i = 0; i < bufferLength - 100; i++) {
+    if (i%4 != 0) continue;
+    var bar = document.createElement('div')
+    bar.style.position = 'absolute';
+    bar.style.bottom = 0;
+    bar.style.left = (i / 4) * barwidth + 'px';
+    bar.style.width = barwidth + 'px';
+    bar.style.height = '10px';
+    bar.style.backgroundColor = 'yellow'
+    bar.style.borderTopLeftRadius = barwidth / 2 + 'px';
+    bar.style.borderTopRightRadius = barwidth / 2 + 'px'
+    bar.style.transition = '.5s';
+    bar.setAttribute('id', 'bar-' + i/4)
+    $visualize.append(bar)
+  }
+
+  /* Cache HTML elements */
+  var audio = document.getElementById('src-audio');
+
+  function init() {
+    /* Connect audio to analyzer and analyzer to audio-out */
+    console.log('Initialize Program');
+    var source = AUDIO.createMediaElementSource(audio);
+    source.crossOrigin = 'anonymous'
+    source.connect(analyzer);
+    analyzer.connect(AUDIO.destination);
+    
+  $('#start').on('click', function() { start(); })
+  $('#stop').on('click', function() { stop(); })
+
+    var requestId, pre;
+    /* Main loop */
+    function loop() {
+      audio.play();
+
+      analyzer.getByteFrequencyData(dataArray);
+
+      if (!pre) {
+        pre = dataArray.slice(); 
+      } else {
+        console.log(pre)
+        /* Utilize the dataArray */
+        for (var i = 0; i < dataArray.length; i++) {
+          if (i%4 != 0) continue;
+          var gap = pre[i] - dataArray[i];
+          var sum = dataArray.reduce(function(a,b) { return a + b; });
+          var avg = sum / bufferLength;
+          height = gap > 0 ? Math.pow(gap, 3) : 0;
+          $('#bar-' + i/4).css('height', height)
+        }
+
+        pre = dataArray.slice();
+      }
+
+      requestId = requestAnimationFrame(loop);
+    }
+    
+    function start() {
+      if (!requestId) {
+        loop();
+      }
+    }
+
+    function stop() {
+      if (requestId) {
+        window.cancelAnimationFrame(requestId);
+        requestId = undefined;
+      }
+    }
+
+    loop();
+  }
+
+  /* Kick it off when the audio is playable */
+  audio.onloadeddata = function() {
+    init();
+    console.log('Processing')
+  }
+
+  $('input#file-input').on('change', function(event) {
+    var url = URL.createObjectURL(this.files[0])
+
+    audio.src = url;
+
+  })
+
+/* ---------------------------- Audio Visualizations --------------------------- */
+
 /* -------------------------------- Audio Events ------------------------------ */
 
   function setupAudioPlayEvent(html, music) {
@@ -301,9 +405,17 @@ var $audio_btn = {};
         data: { id: music.id },
         cache: false,
         success: function(filepath) {
-          $audio_source.setAttribute('src', filepath);
-          $audio.load();
-          $audio.play();
+          var xhr = new XMLHttpRequest()
+          xhr.open("GET", filepath)
+          xhr.responseType = "blob"
+          xhr.onload = function() {
+            var blob = xhr.response;
+            var url = URL.createObjectURL(blob);
+            $audio.src = url;
+            $audio.load();
+            $audio.play();
+          }
+          xhr.send()
         },
         error: function() { console.warn('Could not find the filepath'); }
       })

@@ -9,6 +9,7 @@ div#audio-player-footer.trapezoid {
 }
 div#audio-player-footer > div#audio-player-img {
   position: absolute;
+  z-index: 2;
   top: -5vh;
   width: 25vh;
   height: 25vh;
@@ -21,6 +22,7 @@ div#audio-player-footer > div#audio-player-info-group {
   height: 20vh;
   background-color: transparent;
   position: absolute;
+  z-index: 1;
   top: 0vh;
 }
 div#audio-player-gradient-bg {

@@ -38,12 +38,6 @@
   <!-- Output Template -->
   <div class="wrapper" id="output"></div>
   
-  <div>
-    <audio id="audio" preload="auto">
-      <source id="audio-source" src="">
-    </audio>
-  </div>
-
   <div id="audio-player-footer" class="trapezoid" style="display: none;">
     <div id="audio-player-img"></div>
     <div id="audio-player-info-group">
@@ -66,5 +60,8 @@
     </div>
   </div>
   <div id="audio-player-gradient-bg" style="display: none"></div>
+  <input type="file" style="display: hidden" id="audio-file-input">
+  <audio id="audio" crossOrigin="anonymous" preload="auto"></audio>
+  
 </body>
 </html>
