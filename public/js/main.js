@@ -32,8 +32,8 @@ var ANALYSER = AUDIO.createAnalyser();
 ANALYSER.fftSize = 1024;
 var BUFFER_LENGTH = ANALYSER.frequencyBinCount;
 var DATA_ARRAY = new Uint8Array(BUFFER_LENGTH);
-var BARWIDTH = null;
 var $visualizeElement = null;
+var $audioVisualizerComponentLoaded = false;
 
 /* ---------------------- HTTP Request Helpers --------------------- */
   function GET(page, callback) {
@@ -229,6 +229,9 @@ var $visualizeElement = null;
 
           /* Setup Audio Event Once */
           setupAudioButtonEvent();
+
+          /* Setup Audio Visualizer */
+          initializaAudioParams();
         })
       });
     });
@@ -304,94 +307,67 @@ var $visualizeElement = null;
 
   function initializaAudioParams() {
     var $visualize = $('#audio-info-wrapper');
-    var barwidth = $visualize.width() / (bufferLength - 100) * 4;
-  }
-
-  for (var i = 0; i < bufferLength - 100; i++) {
-    if (i%4 != 0) continue;
-    var bar = document.createElement('div')
-    bar.style.position = 'absolute';
-    bar.style.bottom = 0;
-    bar.style.left = (i / 4) * barwidth + 'px';
-    bar.style.width = barwidth + 'px';
-    bar.style.height = '10px';
-    bar.style.backgroundColor = 'yellow'
-    bar.style.borderTopLeftRadius = barwidth / 2 + 'px';
-    bar.style.borderTopRightRadius = barwidth / 2 + 'px'
-    bar.style.transition = '.5s';
-    bar.setAttribute('id', 'bar-' + i/4)
-    $visualize.append(bar)
-  }
-
-  /* Cache HTML elements */
-  var audio = document.getElementById('src-audio');
-
-  function init() {
-    /* Connect audio to analyzer and analyzer to audio-out */
-    console.log('Initialize Program');
-    var source = AUDIO.createMediaElementSource(audio);
-    source.crossOrigin = 'anonymous'
-    source.connect(analyzer);
-    analyzer.connect(AUDIO.destination);
+    var barwidth = $visualize.width() / (BUFFER_LENGTH - 100) * 16;
     
-  $('#start').on('click', function() { start(); })
-  $('#stop').on('click', function() { stop(); })
+    for (var i = 0; i < BUFFER_LENGTH - 100; i++) {
+      if (i % 16 != 0) continue;
+      var bar = document.createElement('div')
+      bar.style.position = 'absolute';
+      bar.style.bottom = 0;
+      bar.style.top = 0;
+      bar.style.margin = 'auto';
+      bar.style.left = (i / 16) * barwidth + (barwidth * 0.2) + 'px';
+      bar.style.width = barwidth * 0.6 + 'px';
+      bar.style.height = '10px';
+      bar.style.backgroundColor = 'hsla(210, 100%, 50%, 0.3)';
+      bar.style.borderRadius = barwidth / 2 + 'px';
+      bar.style.transition = '.05s';
+      bar.style.zIndex = 2;
+      bar.style.backgroundImage = 'linear-gradient(0deg, hsla(210, 100%, 50%, 0) 0%, hsla(210, 100%, 50%, 0.5) 50%, hsla(210, 100%, 50%, 0) 100%)';
+      bar.setAttribute('id', 'bar-' + i / 16)
+      $visualize.append(bar)
+    }
 
-    var requestId, pre;
-    /* Main loop */
+    /* When window resize then resize the bars */
+    window.addEventListener('resize', function(event) {
+      for (var i = 0; i < BUFFER_LENGTH - 100; i++) {
+        if (i % 16 != 0) continue; 
+        var currentBar = document.getElementById('bar-' + i / 16);
+        barwidth = $visualize.width() / (BUFFER_LENGTH - 100) * 16;
+        currentBar.style.left = (i / 16) * barwidth + (barwidth * 0.2) + 'px';
+        currentBar.style.width = barwidth * 0.6 + 'px';
+        currentBar.style.borderRadius = barwidth / 2 + 'px';
+      }
+    });
+
+    var source = AUDIO.createMediaElementSource($audio);
+    source.crossOrigin = 'anonymous'
+    source.connect(ANALYSER);
+    ANALYSER.connect(AUDIO.destination);
+    var pre;
+    
     function loop() {
-      audio.play();
-
-      analyzer.getByteFrequencyData(dataArray);
-
+      ANALYSER.getByteFrequencyData(DATA_ARRAY);
       if (!pre) {
-        pre = dataArray.slice(); 
+        pre = DATA_ARRAY.slice(); 
       } else {
-        console.log(pre)
-        /* Utilize the dataArray */
-        for (var i = 0; i < dataArray.length; i++) {
-          if (i%4 != 0) continue;
-          var gap = pre[i] - dataArray[i];
-          var sum = dataArray.reduce(function(a,b) { return a + b; });
-          var avg = sum / bufferLength;
-          height = gap > 0 ? Math.pow(gap, 3) : 0;
-          $('#bar-' + i/4).css('height', height)
+        /* Utilize the DATA_ARRAY */
+        for (var i = 0; i < DATA_ARRAY.length; i++) {
+          if (i % 16 != 0) continue;
+          var gap = pre[i] - DATA_ARRAY[i];
+          var sum = DATA_ARRAY.reduce(function(a, b) { return a + b; });
+          var avg = sum / BUFFER_LENGTH;
+          height = Math.abs(DATA_ARRAY[i] - avg) //gap > 0 ? Math.pow(gap, 3) : 0;
+          $('#bar-' + i / 16).css('height', height);
         }
 
-        pre = dataArray.slice();
+        pre = DATA_ARRAY.slice();
       }
 
       requestId = requestAnimationFrame(loop);
     }
-    
-    function start() {
-      if (!requestId) {
-        loop();
-      }
-    }
-
-    function stop() {
-      if (requestId) {
-        window.cancelAnimationFrame(requestId);
-        requestId = undefined;
-      }
-    }
-
     loop();
   }
-
-  /* Kick it off when the audio is playable */
-  audio.onloadeddata = function() {
-    init();
-    console.log('Processing')
-  }
-
-  $('input#file-input').on('change', function(event) {
-    var url = URL.createObjectURL(this.files[0])
-
-    audio.src = url;
-
-  })
 
 /* ---------------------------- Audio Visualizations --------------------------- */
 
