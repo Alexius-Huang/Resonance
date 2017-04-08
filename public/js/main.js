@@ -249,27 +249,18 @@ var $audioVisualizerComponentLoaded = false;
   }
 
   function initializeAllMusicNodes(test) {
-    if (test) console.log('all music node init');
     if (ALL_MUSICS.length != 0) {
       function recursivelyAppendPartial(count) {
         var music = ALL_MUSICS[count - 1];
         var html = REQUEST_PARTIAL('music', { musicname: music.name },
         {
           class: 'music',
-          id: 'music' + music.id
+          id: 'music-' + music.id
         }, function(html) {
           ALL_MUSIC_NODES.push(html);
-          if (CURRENT_PAGE === 'all_musics') {
-            // $('#recent-uploads').prepend(html);
-            // $('#file-' + music.id).slideDown(500);
-          }
-          
-          /* Setup Audio Play Events in All Musics => Each Individually */
-          setupAudioPlayEvent(html, music);
 
           /* If file count isn't 0, keep uploading! */
           if (--count !== 0) recursivelyAppendPartial(count);
-          if (test) console.log(ALL_MUSIC_NODES)
         });
       }
       recursivelyAppendPartial(ALL_MUSICS.length)
@@ -308,7 +299,8 @@ var $audioVisualizerComponentLoaded = false;
   function initializaAudioParams() {
     var $visualize = $('#audio-info-wrapper');
     var barwidth = $visualize.width() / (BUFFER_LENGTH - 100) * 16;
-    
+
+    /* Initialize Bar Style */
     for (var i = 0; i < BUFFER_LENGTH - 100; i++) {
       if (i % 16 != 0) continue;
       var bar = document.createElement('div')
@@ -324,8 +316,8 @@ var $audioVisualizerComponentLoaded = false;
       bar.style.transition = '.05s';
       bar.style.zIndex = 2;
       bar.style.backgroundImage = 'linear-gradient(0deg, hsla(210, 100%, 50%, 0) 0%, hsla(210, 100%, 50%, 0.5) 50%, hsla(210, 100%, 50%, 0) 100%)';
-      bar.setAttribute('id', 'bar-' + i / 16)
-      $visualize.append(bar)
+      bar.setAttribute('id', 'bar-' + i / 16);
+      $visualize.append(bar);
     }
 
     /* When window resize then resize the bars */
@@ -339,34 +331,35 @@ var $audioVisualizerComponentLoaded = false;
         currentBar.style.borderRadius = barwidth / 2 + 'px';
       }
     });
-
+    
+    /* Audio Visualization Process */
     var source = AUDIO.createMediaElementSource($audio);
     source.crossOrigin = 'anonymous'
     source.connect(ANALYSER);
     ANALYSER.connect(AUDIO.destination);
-    var pre;
+    var previousDataArray;
     
     function loop() {
       ANALYSER.getByteFrequencyData(DATA_ARRAY);
-      if (!pre) {
-        pre = DATA_ARRAY.slice(); 
+      if (!previousDataArray) {
+        previousDataArray = DATA_ARRAY.slice(); 
       } else {
         /* Utilize the DATA_ARRAY */
         for (var i = 0; i < DATA_ARRAY.length; i++) {
           if (i % 16 != 0) continue;
-          var gap = pre[i] - DATA_ARRAY[i];
           var sum = DATA_ARRAY.reduce(function(a, b) { return a + b; });
           var avg = sum / BUFFER_LENGTH;
-          height = Math.abs(DATA_ARRAY[i] - avg) //gap > 0 ? Math.pow(gap, 3) : 0;
+          height = Math.abs(DATA_ARRAY[i] - avg);
           $('#bar-' + i / 16).css('height', height);
         }
-
-        pre = DATA_ARRAY.slice();
+        previousDataArray = DATA_ARRAY.slice();
       }
-
       requestId = requestAnimationFrame(loop);
     }
     loop();
+
+    $audio_player_footer.style.display = 'none';
+    $audio_player_footer.style.opacity = 1;
   }
 
 /* ---------------------------- Audio Visualizations --------------------------- */
@@ -417,7 +410,6 @@ var $audioVisualizerComponentLoaded = false;
     $audio_btn.play.on('click', function(event) {
       if ($audio && !isPlaying()) {
         $audio.play();
-        console.log(currentlyPlaying());
       }
     });
     $audio_btn.pause.on('click', function(event) {
@@ -527,6 +519,11 @@ var $audioVisualizerComponentLoaded = false;
     $('#' + id).append(node);
     node.style.display = 'none';
     $(node).fadeIn(200, function() {
+      if (CURRENT_PAGE === 'all_musics') {
+        $(node).unbind(); // Refresh the anonymous event listener and reset again!
+        var music = { id: Number($(node).attr('id').split('-')[1]) };
+        setupAudioPlayEvent(node, music);
+      }
       if (--count !== 0 && CURRENT_PAGE === page) displayNodeRecursively(parameter, count, id, page);
     });
   }
