@@ -37,12 +37,29 @@ div#recent-uploads > div.upload-info {
   box-sizing: border-box;
   width: 80%;
   margin: 0 auto 20px auto;
-  padding: 20px;
   background-color: #333;
   box-shadow: 0px 0px 5px hsl(210, 100%, 50%);
   word-break: break-all;
 }
+div.upload-info-content {
+  box-sizing: border-box;
+  padding: 20px;
+}
+div.upload-info-content > p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
+img.__cover {
+  display: inline-block;
+  margin: 0;
+  width: 100%;
+}
+
+img.__cover,
+div.upload-info-content > p.__filename,
+div.upload-info-content > p.__uploaded,
 div#upload-musics > div#drag-and-drop-file-handler,
 div#upload-musics > div#drag-and-drop-file-handler > p, 
 div#recent-uploads > div.upload-info > p + p,
@@ -53,6 +70,15 @@ div#recent-uploads > div.upload-info > p.__filename {
 }
 
 @media screen and (max-width: 767px) {
+  div.upload-info-content > p.__filename {
+    font-size: 14px;
+    line-height: 18px;
+    margin-bottom: 2px;
+  }
+  div.upload-info-content > p.__uploaded {
+    font-size: 10px;
+    line-height: 14px;
+  }
   div#upload-musics > div#drag-and-drop-file-handler {
     height: 160px;
   }
@@ -72,6 +98,15 @@ div#recent-uploads > div.upload-info > p.__filename {
 }
 
 @media screen and (min-width: 768px) {
+  div.upload-info-content > p.__filename {
+    font-size: 16px;
+    line-height: 20px;
+    margin-bottom: 4px;
+  }
+  div.upload-info-content > p.__uploaded {
+    font-size: 13px;
+    line-height: 17px;
+  }
   div#upload-musics > div#drag-and-drop-file-handler {
     height: 200px;
   }
@@ -87,5 +122,19 @@ div#recent-uploads > div.upload-info > p.__filename {
   }
   div#recent-uploads > div.upload-info > p.__uploaded {
     font-size: 14px;
+  }
+}
+
+@media screen and (min-width: 970px) {
+  div.upload-info-content > p.__filename {
+    font-size: 21px;
+    line-height: 26px;
+  }
+  div.upload-info-content > p.__uploaded {
+    font-size: 16px;
+    line-height: 22px;
+  }
+  div#upload-musics > div#drag-and-drop-file-handler > p {
+    font-size: 30px;
   }
 }

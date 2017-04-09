@@ -3,6 +3,7 @@ const path = require('path')
 const url = require('url')
 const http = require('http')
 const moment = require('moment')
+const GIS = require('g-i-s');
 const fs = require('fs')
 const port = 3001
 
@@ -45,7 +46,6 @@ app.on('activate', () => {
   }
 })
 
-
 function getHTMLFile(name) {
   return __dirname + '/public/' + name + '.html'
 }
@@ -71,7 +71,7 @@ function writeJSONData(type, json, callback) {
 }
 
 function getCurrentTime(format) {
-  return moment().format(format || 'YYYY-MM-DD hh:mm:ss')
+  return moment().format(format || 'YYYY-MM-DD HH:mm:ss')
 }
 
 function decodeASCII(string) {
@@ -87,22 +87,14 @@ function decodeASCII(string) {
 }
 
 let ALL_MUSICS;
+let ALL_MUSIC_COVERS;
 
-http.createServer(function(request, response) {
+const SERVER = http.createServer(function(request, response) {
   console.log(`${request.method} :: http://localhost:${port}${request.url} at ${new Date()}`);
-  
-  function render(file) {
-    fs.readFile(getHTMLFile(file), function (error, pageResponse) {
-      if (error) {
-        response.writeHead(404)
-        response.write('Contents you are looking are Not Found')
-      } else {
-        console.log(`Rendering :: http://localhost:${port}${request.url}.html\n`);
-        response.writeHead(200, { 'Content-Type': 'text/html' })
-        response.write(pageResponse)
-      }
-      response.end()
-    })
+
+  function notFoundResponse(text) {
+    response.writeHead(404)
+    response.write(text || 'Contents you are looking are Not Found')
   }
 
   function jsonResponse(obj) {
@@ -115,8 +107,94 @@ http.createServer(function(request, response) {
     response.end(text)
   }
 
+  function getUser() {
+    return parseJSONData('user')
+  }
+
+  function updateUser(userData, callback) {
+    writeJSONData('user', userData, function() {
+      callback();
+    })
+  }
+
+  function getAllMusic() {
+    return parseJSONData('music')
+  }
+
   function getMusic(id) {
-    return (ALL_MUSICS.filter(function(music) { return music.id == id })[0])
+    return (getAllMusic().filter(function(music) { return music.id == id })[0])
+  }
+
+  function updateAllMusic(musicData, callback) {
+    writeJSONData('music', musicData, function() {
+      callback()
+    })
+  }
+
+  function getAllMusicCover() {
+    return parseJSONData('music_cover')
+  }
+
+  function getMusicCover(music_id) {
+    return (getAllMusicCover().filter(function(cover) { return cover.enabled && cover.music_id == music_id })[0])
+  }
+
+  function updateAllMusicCover(musicCoverData, callback) {
+    writeJSONData('music_cover', musicCoverData, function() {
+      callback()
+    })
+  }
+
+  function save_music_cover(music_id, callback) {
+    let music = getMusic(music_id);
+    GIS(music.name, function(error, results) {
+      if (error) { notFoundResponse(error) } else {
+        let userData = getUser()
+        let musicCoverData = getAllMusicCover()
+        let savedCoverData = []
+        let currentCoverData = null;
+        let count = 1;
+        let coverData;
+        for (let coverData of results) {
+          if (coverData.width === coverData.height) {
+            userData.music_cover_count++
+            userData.music_cover_index++
+            coverData = {
+              id: userData.music_cover_index,
+              music_id: music_id,
+              url: coverData.url,
+              enabled: count === 1,
+              size: coverData.width
+            };
+            
+            savedCoverData.push(coverData)
+
+            if (count === 1) currentCoverData = coverData
+
+            count++;
+          }
+
+          if (count > 5) break;
+        }
+        musicCoverData = musicCoverData.concat(savedCoverData)
+        updateUser(userData, function() {
+          updateAllMusicCover(musicCoverData, function() {
+            callback(currentCoverData)
+          })
+        })
+      }
+    });
+  }
+
+  function render(file) {
+    fs.readFile(getHTMLFile(file), function (error, pageResponse) {
+      if (error) { notFoundResponse(error) } else {
+        console.log(`Rendering :: http://localhost:${port}${request.url}.html\n`);
+        response.writeHead(200, { 'Content-Type': 'text/html' })
+        response.write(pageResponse)
+      }
+      response.end()
+    })
   }
 
   function postRequest(request, callback) {
@@ -154,7 +232,8 @@ http.createServer(function(request, response) {
     switch(request.url) {
       case '/init_server':
         postRequest(request, function(data) {
-          ALL_MUSICS = parseJSONData('music')
+          ALL_MUSICS = getAllMusic()
+          ALL_MUSIC_COVERS = getAllMusicCover()
           plainResponse('success')
         })
         break;
@@ -173,10 +252,32 @@ http.createServer(function(request, response) {
       
       case '/update_all_musics':
         postRequest(request, function(data) {
-          ALL_MUSICS = parseJSONData('music')
+          ALL_MUSICS = getAllMusic()
           jsonResponse(ALL_MUSICS)
         })
         break;
+      
+      case '/get_music_cover':
+        postRequest(request, function(data) {
+          jsonResponse(getMusicCover(data.music_id))
+        })
+        break;
+
+      case '/save_music_cover':
+        postRequest(request, function(data) {
+          save_music_cover(data.music_id, function(coverData) {
+            jsonResponse(coverData)
+          })
+        })
+        break;
+
+      // case '/search_image':
+      //   postRequest(request, function(data) {
+      //     search_image(data.src, function(results) {
+      //       jsonResponse(results)
+      //     })
+      //   })
+      //   break;
 
       case '/upload_musics':
         postRequest(request, function(data) {
@@ -186,22 +287,23 @@ http.createServer(function(request, response) {
             } else {
               fs.createReadStream(data.filepath).pipe(fs.createWriteStream(__dirname + '/public/music/' + data.filename));
               
-              let userData = parseJSONData('user')
+              let userData = getUser();
               userData.music_count++
               userData.music_index++
               let musicIndex = userData.music_index
               
               /* Recording user and music data */
-              writeJSONData('user', userData, function() {
-                var musicObj = {
+              updateUser(userData, function() {
+                let musicObj = {
                   id: musicIndex,
                   name: data.filename,
                   playlistIDs: [],
                   uploaded: getCurrentTime()
                 }
-                musicData = parseJSONData('music')
+                musicData = getAllMusic()
                 musicData.push(musicObj)
-                writeJSONData('music', musicData, function() {
+                updateAllMusic(musicData, function() {
+                  ALL_MUSICS = JSON.parse(JSON.stringify(musicData));
                   data.id = musicObj.id
                   data.message = 'Success Uploading'
                   data.uploaded = musicObj.uploaded
@@ -220,8 +322,14 @@ http.createServer(function(request, response) {
         break;
     }
   }
-}).listen(port)
-
-process.on('uncaughtException', function(err) {
-  // console.log(err)
 })
+
+SERVER.on('listening', function() {
+  console.log(`Okay! Resonance Server Running on Port ${port}\n`)
+})
+
+SERVER.listen(port)
+
+// process.on('uncaughtException', function(err) {
+//   console.log(err)
+// })
