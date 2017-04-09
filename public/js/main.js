@@ -125,6 +125,25 @@ var $audioVisualizerComponentLoaded = false;
     });
   }
 
+  // function getMusicCover(src, callback) {
+  //   $.ajax({
+  //     url: BASE_URL + 'search_image',
+  //     type: 'POST',
+  //     dataType: 'json',
+  //     cache: false,
+  //     data: { src: src },
+  //     success: function(data) {
+  //       var sanitizedData = [];
+  //       for (var image of data) {
+  //         if (image.width === image.height) {
+  //           sanitizedData.push(image);
+  //         }
+  //       }
+  //       callback(sanitizedData);
+  //     }
+  //   });
+  // }
+
   function disableNavBar() {
     var shade = document.createElement('div');
     shade.style.height = '100vh';
@@ -153,6 +172,10 @@ var $audioVisualizerComponentLoaded = false;
       } else processed = processed.concat(string[j])
     }
     return processed;
+  }
+
+  function trimExtension(filename) {
+    return filename.split(".")[0];
   }
 
 /* ------------------------------ Helper Functions --------------------------- */
@@ -541,7 +564,6 @@ var $audioVisualizerComponentLoaded = false;
   }
 
   function updateAllMusics() {
-    console.log('updating...')
     $.ajax({
       url: BASE_URL + 'update_all_musics',
       type: 'POST',
@@ -555,6 +577,18 @@ var $audioVisualizerComponentLoaded = false;
         initializeAllMusicNodes(true);
       },
       error: function() { console.error('Cannot update the "ALL_MUSICS" params'); }
+    })
+  }
+
+  function save_music_cover(music_id, callback) {
+    $.ajax({
+      url: BASE_URL + 'save_music_cover',
+      type: 'POST',
+      cache: false,
+      data: { music_id: music_id },
+      success: function(cover) {
+        callback(cover);
+      }
     })
   }
 
@@ -616,40 +650,41 @@ var $audioVisualizerComponentLoaded = false;
             data: { filename: file.name, filepath: file.path },
             cache: false,
             dataType: 'json',
-            success: function(data) {
-              if (data.error === 'file exists') {
-                duplicatedFiles.push(data.filename)
-                /* If file count isn't 0, keep uploading! */
+            success: function(music) {
+              if (music.error === 'file exists') {
+                duplicatedFiles.push(music.filename)
                 recursivelyUpload(count);
               } else {
-                /* Create Element */
-                var html = REQUEST_PARTIAL('upload_info', {
-                  filename: data.filename,
-                  uploaded: 'Uploaded at ' + data.uploaded
-                }, {
-                  class: 'upload-info',
-                  id: 'file-' + data.id
-                }, function(html) {
-                  RECENTLY_UPLOADED_NODES.push(html);
+                /* Search and save file cover to server */
+                save_music_cover(music.id, function(cover) {
+                  /* Create Element */
+                  REQUEST_PARTIAL('upload_info', {
+                    filename: music.filename,
+                    uploaded: 'Uploaded at ' + music.uploaded
+                  }, {
+                    class: 'upload-info',
+                    id: 'file-' + music.id
+                  }, function(html) {
+                    RECENTLY_UPLOADED_NODES.push(html);
 
-                  if (CURRENT_PAGE === 'upload_musics') {
-                    $('#recent-uploads').prepend(html);
-                    $('#file-' + data.id).slideDown(500);
-                  }
-                  /* If file count isn't 0, keep uploading! */
-                  recursivelyUpload(count);
+                    if (CURRENT_PAGE === 'upload_musics') {
+                      $('#recent-uploads').prepend(html);
+                      $('#file-' + music.id).slideDown(500);
+                    }
+                    recursivelyUpload(count);
+                  });
                 });
               }
             }
           });
         } else {
           console.warn('Wrong MIME format');
-          /* If file count isn't 0, keep uploading! */
           recursivelyUpload(count);
         }
       }
 
       function recursivelyUpload(count) {
+        /* If file count isn't 0, keep uploading! */
         if (--count != 0) {
           setTimeout(function() { uploadFile(count) }, 500);
         } else {
