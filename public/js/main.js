@@ -1,7 +1,7 @@
 var BASE_URL = 'http://127.0.0.1:3001/';
 var PARTIAL_URL = BASE_URL + 'partials/';
 var CURRENT_PAGE = null;
-var DATETIME_FORMAT = 'YYYY-MM-DD hh:mm:ss'
+var DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
 var PARTIAL_JSON = {
   _caption: {
     __title: {
@@ -103,9 +103,17 @@ var $audioVisualizerComponentLoaded = false;
       cache: false,
       success: function(html) {
         resultNode.innerHTML = html
-        
+
         for (var key of Object.keys(data)) {
-          resultNode.getElementsByClassName('__' + key)[0].innerHTML = data[key];
+          var queryNode = resultNode.getElementsByClassName('__' + key)[0];
+
+          switch(queryNode.nodeName) {
+            case 'IMG':
+              queryNode.setAttribute('src', data[key]);
+              break;
+            default:
+              queryNode.innerHTML = data[key];
+          }
         }
 
         callback(resultNode);
@@ -125,24 +133,18 @@ var $audioVisualizerComponentLoaded = false;
     });
   }
 
-  // function getMusicCover(src, callback) {
-  //   $.ajax({
-  //     url: BASE_URL + 'search_image',
-  //     type: 'POST',
-  //     dataType: 'json',
-  //     cache: false,
-  //     data: { src: src },
-  //     success: function(data) {
-  //       var sanitizedData = [];
-  //       for (var image of data) {
-  //         if (image.width === image.height) {
-  //           sanitizedData.push(image);
-  //         }
-  //       }
-  //       callback(sanitizedData);
-  //     }
-  //   });
-  // }
+  function getMusicCover(music_id, callback) {
+    $.ajax({
+      url: BASE_URL + 'get_music_cover',
+      type: 'POST',
+      dataType: 'json',
+      cache: false,
+      data: { music_id: music_id },
+      success: function(cover) {
+        callback(cover);
+      }
+    });
+  }
 
   function disableNavBar() {
     var shade = document.createElement('div');
@@ -242,11 +244,11 @@ var $audioVisualizerComponentLoaded = false;
         setupConditionalHidePlayerFooterEvent();
 
         getMusicFiles(function(data) {
-          var oneDayAgo = moment().subtract(1, 'day').format(DATETIME_FORMAT);
+          var oneDayAgo = String(moment().subtract(1, 'day').format(DATETIME_FORMAT));
           
           ALL_MUSICS = data;
           RECENTLY_UPLOADED = data.filter(function(data) { return oneDayAgo < data.uploaded });
-
+    
           initializeAllMusicNodes();
           initializeRecentUploadedNodes();
 
@@ -254,7 +256,7 @@ var $audioVisualizerComponentLoaded = false;
           setupAudioButtonEvent();
 
           /* Setup Audio Visualizer */
-          initializaAudioParams();
+          setupAudioVisualization();
         })
       });
     });
@@ -275,7 +277,8 @@ var $audioVisualizerComponentLoaded = false;
     if (ALL_MUSICS.length != 0) {
       function recursivelyAppendPartial(count) {
         var music = ALL_MUSICS[count - 1];
-        var html = REQUEST_PARTIAL('music', { musicname: music.name },
+        
+        REQUEST_PARTIAL('music', { musicname: music.name },
         {
           class: 'music',
           id: 'music-' + music.id
@@ -294,21 +297,28 @@ var $audioVisualizerComponentLoaded = false;
     if (RECENTLY_UPLOADED.length != 0) {
       function recursivelyAppendPartial(count) {
         var music = RECENTLY_UPLOADED[count - 1];
-        var html = REQUEST_PARTIAL('upload_info', {
-          filename: music.name,
-          uploaded: 'Uploaded at ' + music.uploaded
-        }, {
-          class: 'upload-info',
-          id: 'file-' + music.id 
-        }, function(html) {
-          RECENTLY_UPLOADED_NODES.push(html)
+
+        /* Get cover first then get partial */
+        getMusicCover(music.id, function(cover) {
           
-          if (CURRENT_PAGE === 'upload_musics') {
-            $('#recent-uploads').prepend(html);
-            $('#file-' + music.id).slideDown(500);
-          }
-          /* If file count isn't 0, keep uploading! */
-          if (--count !== 0) recursivelyAppendPartial(count);
+          
+          REQUEST_PARTIAL('upload_info', {
+            cover: cover.url, 
+            filename: music.name,
+            uploaded: 'Uploaded at ' + music.uploaded
+          }, {
+            class: 'upload-info',
+            id: 'file-' + music.id 
+          }, function(html) {
+            RECENTLY_UPLOADED_NODES.push(html)
+            
+            if (CURRENT_PAGE === 'upload_musics') {
+              $('#recent-uploads').prepend(html);
+              $('#file-' + music.id).slideDown(500);
+            }
+            /* If file count isn't 0, keep uploading! */
+            if (--count !== 0) recursivelyAppendPartial(count);
+          });
         });
       }
       recursivelyAppendPartial(RECENTLY_UPLOADED.length)
@@ -319,7 +329,7 @@ var $audioVisualizerComponentLoaded = false;
 
 /* ---------------------------- Audio Visualizations --------------------------- */
 
-  function initializaAudioParams() {
+  function setupAudioVisualization() {
     var $visualize = $('#audio-info-wrapper');
     var barwidth = $visualize.width() / (BUFFER_LENGTH - 100) * 16;
 
@@ -659,6 +669,7 @@ var $audioVisualizerComponentLoaded = false;
                 save_music_cover(music.id, function(cover) {
                   /* Create Element */
                   REQUEST_PARTIAL('upload_info', {
+                    cover: cover.url,
                     filename: music.filename,
                     uploaded: 'Uploaded at ' + music.uploaded
                   }, {

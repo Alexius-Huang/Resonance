@@ -71,7 +71,7 @@ function writeJSONData(type, json, callback) {
 }
 
 function getCurrentTime(format) {
-  return moment().format(format || 'YYYY-MM-DD hh:mm:ss')
+  return moment().format(format || 'YYYY-MM-DD HH:mm:ss')
 }
 
 function decodeASCII(string) {
@@ -259,10 +259,7 @@ const SERVER = http.createServer(function(request, response) {
       
       case '/get_music_cover':
         postRequest(request, function(data) {
-          // search_music_cover(data.id, function(results) {
-            
-          // })
-          plainResponse('TESTING')
+          jsonResponse(getMusicCover(data.music_id))
         })
         break;
 
