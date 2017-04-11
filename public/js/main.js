@@ -21,6 +21,7 @@ var RECENTLY_UPLOADED_NODES = []
 /* Audio params */
 var $audio = null;
 var $audio_player_footer = null;
+var $audio_player_img = null;
 var $audio_player_gradient_bg = null;
 var $audio_btn = {};
 
@@ -133,6 +134,19 @@ var $audioVisualizerComponentLoaded = false;
     });
   }
 
+  function getMusic(music_id, callback) {
+    $.ajax({
+      type: 'POST',
+      url: BASE_URL + 'get_music_path',
+      data: { id: music_id },
+      cache: false,
+      success: function(filepath) {
+        callback(filepath);
+      },
+      error: function() { console.warn('Could not find the filepath'); }
+    })
+  }
+
   function getMusicCover(music_id, callback) {
     $.ajax({
       url: BASE_URL + 'get_music_cover',
@@ -143,6 +157,28 @@ var $audioVisualizerComponentLoaded = false;
       success: function(cover) {
         callback(cover);
       }
+    });
+  }
+
+  function loadMusicBlob(musicpath, callback) {
+    var xhr = new XMLHttpRequest()
+    xhr.open("GET", musicpath);
+    xhr.responseType = "blob";
+    xhr.onload = function() {
+      var blob = xhr.response;
+      var url = URL.createObjectURL(blob);
+      callback(url);
+    };
+    xhr.send();
+  }
+
+  function loadMusicCover(music_id, callback) {
+    $.ajax({
+      url: BASE_URL + 'get_music_cover',
+      type: 'POST',
+      data: { music_id: music_id },
+      dataType: 'json',
+      success: function(cover) { callback(cover); },
     });
   }
 
@@ -229,6 +265,7 @@ var $audioVisualizerComponentLoaded = false;
       /* Init params */
       $audio = document.getElementById('audio');
       $audio_player_footer = document.getElementById('audio-player-footer');
+      $audio_player_img = $('#audio-player-img');
       $audio_player_gradient_bg = document.getElementById('audio-player-gradient-bg');
       $audio_btn.fast_backward = $('#audio-fast-backward');
       $audio_btn.backward = $('#audio-backward');
@@ -346,7 +383,7 @@ var $audioVisualizerComponentLoaded = false;
       bar.style.height = '10px';
       bar.style.backgroundColor = 'hsla(210, 100%, 50%, 0.3)';
       bar.style.borderRadius = barwidth / 2 + 'px';
-      bar.style.transition = '.05s';
+      bar.style.transition = '.01s';
       bar.style.zIndex = 2;
       bar.style.backgroundImage = 'linear-gradient(0deg, hsla(210, 100%, 50%, 0) 0%, hsla(210, 100%, 50%, 0.5) 50%, hsla(210, 100%, 50%, 0) 100%)';
       bar.setAttribute('id', 'bar-' + i / 16);
@@ -370,22 +407,25 @@ var $audioVisualizerComponentLoaded = false;
     source.crossOrigin = 'anonymous'
     source.connect(ANALYSER);
     ANALYSER.connect(AUDIO.destination);
-    var previousDataArray;
+    var previousDataArray = [null, null, null];
     
     function loop() {
       ANALYSER.getByteFrequencyData(DATA_ARRAY);
       if (!previousDataArray) {
-        previousDataArray = DATA_ARRAY.slice(); 
+        previousDataArray.push(DATA_ARRAY.slice());
       } else {
         /* Utilize the DATA_ARRAY */
+        var compareDataArray = previousDataArray.shift();
         for (var i = 0; i < DATA_ARRAY.length; i++) {
           if (i % 16 != 0) continue;
+          var delta = 0// compareDataArray ? Math.abs(compareDataArray[i] - DATA_ARRAY[i]) : 0;
           var sum = DATA_ARRAY.reduce(function(a, b) { return a + b; });
           var avg = sum / BUFFER_LENGTH;
-          height = Math.abs(DATA_ARRAY[i] - avg);
+          var result = Math.abs(Math.pow(DATA_ARRAY[i], 2)) * 0.0025;
+          height = result >= 1 ? result : 1;
           $('#bar-' + i / 16).css('height', height);
         }
-        previousDataArray = DATA_ARRAY.slice();
+        previousDataArray.push(DATA_ARRAY.slice());
       }
       requestId = requestAnimationFrame(loop);
     }
@@ -401,26 +441,16 @@ var $audioVisualizerComponentLoaded = false;
 
   function setupAudioPlayEvent(html, music) {
     $(html).on('click', function(event) {
-      $.ajax({
-        type: 'POST',
-        url: BASE_URL + 'get_music_path',
-        data: { id: music.id },
-        cache: false,
-        success: function(filepath) {
-          var xhr = new XMLHttpRequest()
-          xhr.open("GET", filepath)
-          xhr.responseType = "blob"
-          xhr.onload = function() {
-            var blob = xhr.response;
-            var url = URL.createObjectURL(blob);
+      loadMusicCover(music.id, function(cover) {
+        getMusic(music.id, function(filepath) {
+          loadMusicBlob(filepath, function(url) {
+          $audio_player_img.css('background-image', 'url("' + cover.url + '")');
             $audio.src = url;
             $audio.load();
             $audio.play();
-          }
-          xhr.send()
-        },
-        error: function() { console.warn('Could not find the filepath'); }
-      })
+          });
+        });
+      });
     });
   }
 
